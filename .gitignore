@@ -1,0 +1,5 @@
+dotagen
+bin/
+*.exe
+.opencode/node_modules/
+.dotagen/

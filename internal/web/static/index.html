@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dotagen dashboard</title>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+</head>
+<body>
+    <div class="app-layout" id="app">
+        <nav class="nav-drawer" id="nav-drawer">
+            <div class="nav-header">
+                <h1>dotagen</h1>
+                <div class="tagline">sub-agents, everywhere</div>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-label">Navigation</div>
+                <a class="nav-item active" data-page="dashboard">
+                    <span class="nav-icon">&#9632;</span>
+                    Dashboard
+                </a>
+                <a class="nav-item" data-page="agents">
+                    <span class="nav-icon">&#9881;</span>
+                    Agents
+                </a>
+                <a class="nav-item" data-page="targets">
+                    <span class="nav-icon">&#9741;</span>
+                    Targets
+                </a>
+                <a class="nav-item" data-page="preview">
+                    <span class="nav-icon">&#128196;</span>
+                    Preview
+                </a>
+                <a class="nav-item" data-page="status">
+                    <span class="nav-icon">&#10003;</span>
+                    Status
+                </a>
+            </div>
+            <div class="nav-footer">
+                <button class="m3-btn m3-btn-filled" onclick="triggerSync()" style="width:100%">
+                    Sync All
+                </button>
+                <button class="m3-btn m3-btn-outlined" onclick="triggerClean()" style="width:100%">
+                    Clean
+                </button>
+            </div>
+        </nav>
+
+        <header class="topbar">
+            <button class="m3-btn-icon" id="nav-toggle" onclick="toggleNav()">&#9776;</button>
+            <span class="topbar-title" id="topbar-title">Dashboard</span>
+            <div class="topbar-search">
+                <span class="search-icon">&#128269;</span>
+                <input type="text" id="global-search" placeholder="Search agents..." oninput="handleSearch(this.value)">
+            </div>
+            <div class="topbar-actions">
+                <button class="m3-btn-icon" onclick="triggerSync()" title="Sync All">&#10227;</button>
+            </div>
+        </header>
+
+        <main class="main-content" id="main-content">
+            <div id="page-dashboard" class="page active">
+                <h2 class="page-title">Dashboard</h2>
+                <p class="page-subtitle">Overview of your agent configuration and sync status.</p>
+                <div class="stats-row" id="dashboard-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-agents">-</div>
+                        <div class="stat-label">Total Agents</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-targets">-</div>
+                        <div class="stat-label">Targets</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-synced">-</div>
+                        <div class="stat-label">Synced</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-categories">-</div>
+                        <div class="stat-label">Categories</div>
+                    </div>
+                </div>
+                <div class="quick-actions-row">
+                    <button class="m3-btn m3-btn-filled" onclick="triggerSync()">Sync All</button>
+                    <button class="m3-btn m3-btn-outlined" onclick="triggerClean()">Clean All</button>
+                    <button class="m3-btn m3-btn-tonal" onclick="navigateTo('agents')">Manage Agents</button>
+                </div>
+            </div>
+
+            <div id="page-agents" class="page">
+                <h2 class="page-title">Agents</h2>
+                <p class="page-subtitle" id="agents-subtitle">Manage your sub-agent definitions.</p>
+                <div class="filter-bar">
+                    <div class="filter-chips" id="category-chips"></div>
+                    <span class="agent-count" id="agent-count"></span>
+                    <button class="m3-btn m3-btn-filled" onclick="showCreateAgent()" style="height:32px;font-size:13px;padding:0 16px;">+ New</button>
+                </div>
+                <div class="agents-grid" id="agents-grid"></div>
+            </div>
+
+            <div id="page-targets" class="page">
+                <h2 class="page-title">Target Configuration</h2>
+                <p class="page-subtitle">Matrix view of agent-to-target mappings. Click a cell to toggle.</p>
+                <div class="matrix-stats" id="matrix-stats">
+                    <div class="matrix-stat-card">
+                        <div class="matrix-stat-value" id="matrix-stat-total">-</div>
+                        <div class="matrix-stat-label">Total Agents</div>
+                    </div>
+                    <div class="matrix-stat-card">
+                        <div class="matrix-stat-value matrix-stat-green" id="matrix-stat-enabled">-</div>
+                        <div class="matrix-stat-label">Enabled</div>
+                    </div>
+                    <div class="matrix-stat-card">
+                        <div class="matrix-stat-value matrix-stat-muted" id="matrix-stat-disabled">-</div>
+                        <div class="matrix-stat-label">Disabled</div>
+                    </div>
+                    <div class="matrix-stat-card">
+                        <div class="matrix-stat-value" id="matrix-stat-platforms">-</div>
+                        <div class="matrix-stat-label">Platforms</div>
+                    </div>
+                </div>
+                <div class="matrix-filter" id="matrix-filter-chips"></div>
+                <div class="target-matrix-wrap" id="target-matrix"></div>
+            </div>
+
+            <div id="page-preview" class="page">
+                <h2 class="page-title">Preview</h2>
+                <p class="page-subtitle">Preview rendered output for a specific target platform.</p>
+                <div class="preview-section">
+                    <div class="preview-controls">
+                        <select class="m3-select" id="preview-agent">
+                            <option value="">Select agent</option>
+                        </select>
+                        <select class="m3-select" id="preview-target">
+                            <option value="">Select target</option>
+                        </select>
+                        <button class="m3-btn m3-btn-filled" onclick="loadPreview()">Preview</button>
+                    </div>
+                    <div class="preview-output">
+                        <pre id="preview-output"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-status" class="page">
+                <h2 class="page-title">Sync Status</h2>
+                <p class="page-subtitle">Current state of generated files and symlinks.</p>
+                <div class="status-list" id="status-content"></div>
+            </div>
+        </main>
+
+        <aside class="detail-panel" id="detail-panel">
+            <div class="detail-header">
+                <h3 id="detail-title">Agent</h3>
+                <button class="m3-btn-icon" onclick="closeDetail()">&#10005;</button>
+            </div>
+            <div class="detail-body" id="detail-body"></div>
+            <div class="detail-actions" id="detail-actions">
+                <button class="m3-btn m3-btn-tonal" id="detail-edit-btn">Edit</button>
+                <button class="m3-btn m3-btn-danger" id="detail-delete-btn">Delete</button>
+            </div>
+        </aside>
+    </div>
+
+    <div id="modal" class="modal-overlay hidden">
+        <div class="modal-surface">
+            <div class="modal-header">
+                <h3 id="modal-title">Create Agent</h3>
+                <button class="m3-btn-icon" onclick="closeModal()">&#10005;</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-actions" id="modal-actions"></div>
+        </div>
+    </div>
+
+    <div class="snackbar" id="snackbar"></div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
