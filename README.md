@@ -29,7 +29,7 @@ Instead of writing and maintaining N sets of configurations for N platforms, you
 ### Build from source
 
 ```bash
-git clone https://github.com/k0walski/dotagen.git
+git clone https://github.com/enolalabs/dotagen.git
 cd dotagen
 make build
 ```
@@ -39,7 +39,7 @@ The binary will be created at `./dotagen`.
 ### Or install directly
 
 ```bash
-go install github.com/k0walski/dotagen/cmd/dotagen@latest
+go install github.com/enolalabs/dotagen/cmd/dotagen@latest
 ```
 
 ## Built-in Agents
