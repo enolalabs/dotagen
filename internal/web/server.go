@@ -6,8 +6,8 @@ import (
 	"io/fs"
 	"net/http"
 
-	"github.com/k0walski/dotagen/internal/config"
-	"github.com/k0walski/dotagen/internal/platform"
+	"github.com/enolalabs/dotagen/internal/config"
+	"github.com/enolalabs/dotagen/internal/platform"
 )
 
 //go:embed static/*

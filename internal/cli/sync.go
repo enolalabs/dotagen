@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/k0walski/dotagen/internal/agent"
-	"github.com/k0walski/dotagen/internal/config"
-	"github.com/k0walski/dotagen/internal/engine"
-	"github.com/k0walski/dotagen/internal/platform"
+	"github.com/enolalabs/dotagen/internal/agent"
+	"github.com/enolalabs/dotagen/internal/config"
+	"github.com/enolalabs/dotagen/internal/engine"
+	"github.com/enolalabs/dotagen/internal/platform"
 	"github.com/spf13/cobra"
 )
 

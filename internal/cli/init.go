@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/k0walski/dotagen/internal/builtin"
-	"github.com/k0walski/dotagen/internal/engine"
+	"github.com/enolalabs/dotagen/internal/builtin"
+	"github.com/enolalabs/dotagen/internal/engine"
 	"github.com/spf13/cobra"
 )
 
@@ -99,7 +99,7 @@ var initCmd = &cobra.Command{
 func buildDefaultConfig(agentNames []string) string {
 	var sb strings.Builder
 	sb.WriteString("# dotagen configuration\n")
-	sb.WriteString("# Docs: https://github.com/k0walski/dotagen\n")
+	sb.WriteString("# Docs: https://github.com/enolalabs/dotagen\n")
 	sb.WriteString("#\n")
 	sb.WriteString("# All agents are listed with empty targets (disabled).\n")
 	sb.WriteString("# Set targets to enable them. Examples:\n")

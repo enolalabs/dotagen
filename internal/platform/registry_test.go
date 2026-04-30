@@ -3,7 +3,7 @@ package platform
 import (
 	"testing"
 
-	"github.com/k0walski/dotagen/internal/agent"
+	"github.com/enolalabs/dotagen/internal/agent"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

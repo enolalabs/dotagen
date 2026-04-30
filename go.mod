@@ -1,4 +1,4 @@
-module github.com/k0walski/dotagen
+module github.com/enolalabs/dotagen
 
 go 1.26.2
 

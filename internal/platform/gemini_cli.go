@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/k0walski/dotagen/internal/agent"
+	"github.com/enolalabs/dotagen/internal/agent"
 )
 
 type GeminiCLIAdapter struct{}

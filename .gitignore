@@ -1,5 +1,6 @@
 dotagen
 bin/
+dist/
 *.exe
 .opencode/node_modules/
 .dotagen/

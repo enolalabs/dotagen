@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/k0walski/dotagen/internal/agent"
+	"github.com/enolalabs/dotagen/internal/agent"
 	"gopkg.in/yaml.v3"
 )
 

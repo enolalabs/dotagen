@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/k0walski/dotagen/internal/config"
-	"github.com/k0walski/dotagen/internal/engine"
+	"github.com/enolalabs/dotagen/internal/config"
+	"github.com/enolalabs/dotagen/internal/engine"
 	"github.com/spf13/cobra"
 )
 

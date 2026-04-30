@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/k0walski/dotagen/internal/config"
+	"github.com/enolalabs/dotagen/internal/config"
 	"github.com/spf13/cobra"
 )
 

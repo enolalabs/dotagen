@@ -198,7 +198,7 @@ dotagen/
 #### 1.1 — Initialize Go module
 
 ```bash
-go mod init github.com/k0walski/dotagen
+go mod init github.com/enolalabs/dotagen
 ```
 
 #### 1.2 — Install dependencies
@@ -345,7 +345,7 @@ Tạo scaffold `.dotagen/` directory:
 
 ```yaml
 # dotagen configuration
-# Docs: https://github.com/k0walski/dotagen
+# Docs: https://github.com/enolalabs/dotagen
 
 targets:
   - claude-code
@@ -732,7 +732,7 @@ clean:        rm -rf bin/
 
 - Goreleaser config cho cross-platform builds
 - GitHub Actions CI/CD
-- `go install github.com/k0walski/dotagen@latest`
+- `go install github.com/enolalabs/dotagen@latest`
 
 ### Acceptance Criteria
 
