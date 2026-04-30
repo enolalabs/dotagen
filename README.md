@@ -302,6 +302,10 @@ make clean     # Remove build artifacts
 └── README.md
 ```
 
+## Acknowledgments
+
+The 144 built-in agents are sourced from the [**VoltAgent**](https://github.com/VoltAgent/voltagent) project — an excellent collection of production-ready sub-agent prompts. Many thanks to the VoltAgent team for open-sourcing these high-quality agent definitions.
+
 ## License
 
 MIT
