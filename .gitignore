@@ -1,4 +1,4 @@
-dotagen
+/dotagen
 bin/
 dist/
 *.exe
