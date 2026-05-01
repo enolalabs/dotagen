@@ -1,7 +1,7 @@
 package platform
 
 import (
-	"github.com/enolalabs/dotagen/internal/agent"
+	"github.com/enolalabs/dotagen/v2/internal/agent"
 )
 
 type Adapter interface {

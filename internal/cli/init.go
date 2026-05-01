@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/enolalabs/dotagen/internal/builtin"
-	"github.com/enolalabs/dotagen/internal/config"
-	"github.com/enolalabs/dotagen/internal/engine"
+	"github.com/enolalabs/dotagen/v2/internal/builtin"
+	"github.com/enolalabs/dotagen/v2/internal/config"
+	"github.com/enolalabs/dotagen/v2/internal/engine"
 	"github.com/spf13/cobra"
 )
 

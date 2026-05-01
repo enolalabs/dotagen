@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/enolalabs/dotagen/internal/cli"
+	"github.com/enolalabs/dotagen/v2/internal/cli"
 )
 
 func main() {

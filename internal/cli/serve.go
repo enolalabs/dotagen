@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/enolalabs/dotagen/internal/web"
+	"github.com/enolalabs/dotagen/v2/internal/web"
 	"github.com/spf13/cobra"
 )
 
