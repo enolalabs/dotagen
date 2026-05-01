@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/enolalabs/dotagen/v2/internal/agent"
 	"github.com/enolalabs/dotagen/v2/internal/config"
 	"github.com/spf13/cobra"
 )
@@ -110,30 +111,10 @@ func resolveContent(name string) (string, error) {
 	}
 
 	if createTemplate {
-		return scaffoldTemplate(name), nil
+		return agent.ScaffoldContent(name), nil
 	}
 
 	return interactiveContent(name)
-}
-
-func scaffoldTemplate(name string) string {
-	title := strings.ReplaceAll(name, "-", " ")
-	title = strings.Title(title)
-	return fmt.Sprintf(`# %s
-
-## Role
-
-TODO: Describe the agent's role and expertise.
-
-## Guidelines
-
-- Guideline 1
-- Guideline 2
-
-## Examples
-
-TODO: Add examples of expected behavior.
-`, title)
 }
 
 func interactiveContent(name string) (string, error) {
@@ -152,7 +133,7 @@ func interactiveContent(name string) (string, error) {
 	tmpPath := tmpFile.Name()
 	defer os.Remove(tmpPath)
 
-	scaffold := scaffoldTemplate(name)
+	scaffold := agent.ScaffoldContent(name)
 	tmpFile.WriteString(scaffold)
 	tmpFile.Close()
 
@@ -197,7 +178,10 @@ func runEditor(execPath string, args []string) int {
 }
 
 func readFromStdin(name string) (string, error) {
-	stat, _ := os.Stdin.Stat()
+	stat, err := os.Stdin.Stat()
+	if err != nil {
+		return "", fmt.Errorf("failed to stat stdin: %w", err)
+	}
 	if (stat.Mode() & os.ModeCharDevice) == 0 {
 		data, err := io.ReadAll(os.Stdin)
 		if err != nil {

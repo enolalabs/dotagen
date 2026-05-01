@@ -19,20 +19,20 @@ var syncCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dotgenDir, err := config.FindDotgenDir()
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to find dotgen directory: %w", err)
 		}
 
 		projectDir, err := config.GetProjectDir()
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get project directory: %w", err)
 		}
 
 		cfg, err := config.LoadConfig(dotgenDir)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to load config: %w", err)
 		}
 		if err := cfg.Validate(); err != nil {
-			return err
+			return fmt.Errorf("invalid config: %w", err)
 		}
 
 		var syncTargets []string
@@ -92,7 +92,7 @@ var syncCmd = &cobra.Command{
 
 		results, err := renderer.RenderAll(agents, filteredCfg, dotgenDir, projectDir)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to render agents: %w", err)
 		}
 
 		var agentNames []string
@@ -100,7 +100,7 @@ var syncCmd = &cobra.Command{
 			agentNames = append(agentNames, ag.Name)
 		}
 
-		removed, err := engine.RemoveStaleSymlinks(projectDir, agentNames, syncTargets)
+		removed, err := engine.RemoveStaleSymlinks(projectDir, dotgenDir, agentNames, syncTargets)
 		if err != nil {
 			fmt.Printf("  ⚠ Failed to clean stale symlinks: %v\n", err)
 		}

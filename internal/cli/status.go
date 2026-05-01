@@ -68,9 +68,13 @@ var statusCmd = &cobra.Command{
 					continue
 				}
 
-				adapter, _ := registry.Get(target)
+				adapter, err := registry.Get(target)
+				if err != nil {
+					fmt.Printf("    ⚠ %-12s (unknown platform)\n", target)
+					continue
+				}
 				symlinkPath := filepath.Join(projectDir, adapter.SymlinkPath(ag.Name))
-				status := checkStatus(ag, target, adapter, symlinkPath, dotgenDir)
+				status := checkStatus(ag, target, adapter, symlinkPath)
 				switch status {
 				case "synced":
 					fmt.Printf("    ✓ %-12s (synced)\n", target)
@@ -89,12 +93,9 @@ var statusCmd = &cobra.Command{
 	},
 }
 
-func checkStatus(ag agent.Agent, target string, adapter platform.Adapter, symlinkPath string, dotgenDir string) string {
+func checkStatus(ag agent.Agent, target string, adapter platform.Adapter, symlinkPath string) string {
 	info, err := os.Lstat(symlinkPath)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return "missing"
-		}
 		return "missing"
 	}
 
@@ -133,7 +134,6 @@ func checkStatus(ag agent.Agent, target string, adapter platform.Adapter, symlin
 		return "out-of-date"
 	}
 
-	_ = dotgenDir
 	return "synced"
 }
 

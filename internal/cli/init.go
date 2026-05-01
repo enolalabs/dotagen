@@ -28,20 +28,34 @@ var initCmd = &cobra.Command{
 			fmt.Printf("~/.dotagen/ already exists at %s\n", dotgenDir)
 			fmt.Print("Overwrite? (y/N): ")
 			reader := bufio.NewReader(os.Stdin)
-			input, _ := reader.ReadString('\n')
+			input, err := reader.ReadString('\n')
+			if err != nil {
+				return fmt.Errorf("failed to read input: %w", err)
+			}
 			input = strings.TrimSpace(strings.ToLower(input))
 			if input != "y" && input != "yes" {
 				fmt.Println("Aborted.")
 				return nil
 			}
 
-			links, _ := engine.FindDotagenSymlinks(home)
-			for _, link := range links {
-				os.Remove(link.Path)
+			links, err := engine.FindDotagenSymlinks(home, dotgenDir)
+			if err != nil {
+				return fmt.Errorf("failed to find existing symlinks: %w", err)
 			}
-			engine.RemoveGeneratedContents(dotgenDir)
-			os.RemoveAll(filepath.Join(dotgenDir, "agents"))
-			os.Remove(filepath.Join(dotgenDir, "config.yaml"))
+			for _, link := range links {
+				if err := os.Remove(link.Path); err != nil {
+					fmt.Printf("  ⚠ Failed to remove symlink %s: %v\n", link.Path, err)
+				}
+			}
+			if err := engine.RemoveGeneratedContents(dotgenDir); err != nil {
+				return fmt.Errorf("failed to remove generated contents: %w", err)
+			}
+			if err := os.RemoveAll(filepath.Join(dotgenDir, "agents")); err != nil {
+				return fmt.Errorf("failed to remove agents directory: %w", err)
+			}
+			if err := os.Remove(filepath.Join(dotgenDir, "config.yaml")); err != nil && !os.IsNotExist(err) {
+				return fmt.Errorf("failed to remove config.yaml: %w", err)
+			}
 		}
 
 		dirs := []string{

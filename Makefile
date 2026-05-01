@@ -1,7 +1,9 @@
 .PHONY: build test lint install dev clean
 
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+
 build:
-	go build -o dotagen ./cmd/dotagen
+	go build -ldflags="-X github.com/enolalabs/dotagen/v2/internal/cli.version=$(VERSION)" -o dotagen ./cmd/dotagen
 
 test:
 	go test ./...
@@ -16,4 +18,4 @@ dev:
 	go run ./cmd/dotagen serve
 
 clean:
-	rm -rf bin/
+	rm -rf bin/ dotagen

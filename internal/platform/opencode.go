@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/enolalabs/dotagen/v2/internal/agent"
 	"github.com/enolalabs/dotagen/v2/internal/config"
@@ -27,19 +26,7 @@ func (a *OpenCodeAdapter) Name() string {
 }
 
 func (a *OpenCodeAdapter) Render(ag agent.Agent) (string, error) {
-	description := ""
-	if desc, ok := ag.Frontmatter["description"]; ok && desc != "" {
-		description = desc
-	} else {
-		lines := strings.Split(ag.Content, "\n")
-		for _, line := range lines {
-			trimmed := strings.TrimSpace(line)
-			if trimmed != "" {
-				description = strings.TrimPrefix(trimmed, "# ")
-				break
-			}
-		}
-	}
+	description := agent.ExtractDescription(ag)
 
 	fm := OpenCodeFrontmatter{
 		Description: description,
@@ -59,9 +46,9 @@ func (a *OpenCodeAdapter) OutputPath(agentName string) string {
 }
 
 func (a *OpenCodeAdapter) SymlinkPath(agentName string) string {
-	return filepath.Join(config.OPEN_CODE_ROOT_PATH, agentName+".md")
+	return filepath.Join(config.OpenCodeRootPath, agentName+".md")
 }
 
 func (a *OpenCodeAdapter) EnsureDirectories(projectDir string) error {
-	return os.MkdirAll(filepath.Join(projectDir, config.OPEN_CODE_ROOT_PATH), 0o755)
+	return os.MkdirAll(filepath.Join(projectDir, config.OpenCodeRootPath), 0o755)
 }

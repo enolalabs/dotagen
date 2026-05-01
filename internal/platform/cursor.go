@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/enolalabs/dotagen/v2/internal/agent"
 	"github.com/enolalabs/dotagen/v2/internal/config"
@@ -28,19 +27,7 @@ func (a *CursorAdapter) Name() string {
 }
 
 func (a *CursorAdapter) Render(ag agent.Agent) (string, error) {
-	description := ""
-	if desc, ok := ag.Frontmatter["description"]; ok && desc != "" {
-		description = desc
-	} else {
-		lines := strings.Split(ag.Content, "\n")
-		for _, line := range lines {
-			trimmed := strings.TrimSpace(line)
-			if trimmed != "" {
-				description = strings.TrimPrefix(trimmed, "# ")
-				break
-			}
-		}
-	}
+	description := agent.ExtractDescription(ag)
 
 	fm := CursorFrontmatter{
 		Description: description,
@@ -60,9 +47,9 @@ func (a *CursorAdapter) OutputPath(agentName string) string {
 }
 
 func (a *CursorAdapter) SymlinkPath(agentName string) string {
-	return filepath.Join(config.CURSOR_ROOT_PATH, agentName+".mdc")
+	return filepath.Join(config.CursorRootPath, agentName+".mdc")
 }
 
 func (a *CursorAdapter) EnsureDirectories(projectDir string) error {
-	return os.MkdirAll(filepath.Join(projectDir, config.CURSOR_ROOT_PATH), 0o755)
+	return os.MkdirAll(filepath.Join(projectDir, config.CursorRootPath), 0o755)
 }

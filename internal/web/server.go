@@ -6,7 +6,6 @@ import (
 	"io/fs"
 	"net/http"
 
-	"github.com/enolalabs/dotagen/v2/internal/config"
 	"github.com/enolalabs/dotagen/v2/internal/platform"
 )
 
@@ -17,6 +16,7 @@ type Server struct {
 	port     int
 	rootDir  string
 	registry *platform.Registry
+	mu       chan struct{}
 }
 
 func NewServer(rootDir string, port int) (*Server, error) {
@@ -24,20 +24,18 @@ func NewServer(rootDir string, port int) (*Server, error) {
 		port:     port,
 		rootDir:  rootDir,
 		registry: platform.NewRegistry(),
+		mu:       make(chan struct{}, 1),
 	}, nil
 }
 
 func (s *Server) Start() error {
 	mux := http.NewServeMux()
 
-	staticFS, _ := fs.Sub(staticFiles, "static")
-	mux.Handle("/", http.FileServer(http.FS(staticFS)))
-
-	dotgenDir, err := config.FindDotgenDir()
+	staticFS, err := fs.Sub(staticFiles, "static")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load static files: %w", err)
 	}
-	_ = dotgenDir
+	mux.Handle("/", http.FileServer(http.FS(staticFS)))
 
 	mux.HandleFunc("GET /api/config", s.handleGetConfig)
 	mux.HandleFunc("PUT /api/config", s.handleUpdateConfig)
@@ -54,4 +52,12 @@ func (s *Server) Start() error {
 	mux.HandleFunc("GET /api/status", s.handleStatus)
 
 	return http.ListenAndServe(fmt.Sprintf(":%d", s.port), mux)
+}
+
+func (s *Server) lock() {
+	s.mu <- struct{}{}
+}
+
+func (s *Server) unlock() {
+	<-s.mu
 }

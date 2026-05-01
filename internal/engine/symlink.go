@@ -11,13 +11,19 @@ import (
 
 func CreateSymlink(src, dst string) error {
 	if info, err := os.Lstat(dst); err == nil {
-		if info.Mode()&os.ModeSymlink != 0 {
-			existing, _ := os.Readlink(dst)
-			if existing == src {
-				return nil
-			}
+		if info.Mode()&os.ModeSymlink == 0 {
+			return fmt.Errorf("refusing to overwrite non-symlink file: %s", dst)
 		}
-		os.Remove(dst)
+		existing, err := os.Readlink(dst)
+		if err != nil {
+			return fmt.Errorf("failed to read existing symlink: %w", err)
+		}
+		if existing == src {
+			return nil
+		}
+		if err := os.Remove(dst); err != nil {
+			return fmt.Errorf("failed to remove existing symlink: %w", err)
+		}
 	}
 
 	return os.Symlink(src, dst)
@@ -101,40 +107,15 @@ func RemoveGeneratedContents(dotgenDir string) error {
 	return nil
 }
 
-func FindAllSymlinkPaths(projectDir string, dotgenDir string, agentNames []string, cfgTargets []string, registry interface {
-	Get(string) (interface{ SymlinkPath(string) string }, error)
-}) []string {
-	return nil
-}
-
-func CollectSymlinkPaths(projectDir string, agentNames []string, targets []string, adapters map[string]struct {
-	SymlinkPath func(string) string
-}) []string {
-	var paths []string
-	for _, name := range agentNames {
-		for _, target := range targets {
-			a, ok := adapters[target]
-			if !ok {
-				continue
-			}
-			paths = append(paths, a.SymlinkPath(name))
-		}
-	}
-	return paths
-}
-
-func FindDotagenSymlinks(projectDir string) ([]SymlinkInfo, error) {
-	var links []SymlinkInfo
-	home, _ := os.UserHomeDir()
-	dotgenDir := filepath.Join(home, ".dotagen")
-
+func FindDotagenSymlinks(projectDir string, dotgenDir string) ([]SymlinkInfo, error) {
 	platformDirs := map[string]string{
-		config.CLAUDE_CODE_ROOT_PATH: "claude-code",
-		config.CURSOR_ROOT_PATH:      "cursor",
-		config.GEMINI_CLI_ROOT_PATH:  "gemini-cli",
-		config.OPEN_CODE_ROOT_PATH:   "opencode",
+		config.ClaudeCodeRootPath: "claude-code",
+		config.CursorRootPath:     "cursor",
+		config.GeminiCliRootPath:  "gemini-cli",
+		config.OpenCodeRootPath:   "opencode",
 	}
 
+	var links []SymlinkInfo
 	for dir, platform := range platformDirs {
 		fullDir := filepath.Join(projectDir, dir)
 		entries, err := os.ReadDir(fullDir)
@@ -150,16 +131,23 @@ func FindDotagenSymlinks(projectDir string) ([]SymlinkInfo, error) {
 				continue
 			}
 			fullPath := filepath.Join(fullDir, entry.Name())
-			isLink, _ := IsSymlink(fullPath)
-			if !isLink {
+			isLink, err := IsSymlink(fullPath)
+			if err != nil || !isLink {
 				continue
 			}
-			target, _ := os.Readlink(fullPath)
+			target, err := os.Readlink(fullPath)
+			if err != nil {
+				continue
+			}
+			resolvedTarget := target
+			if !filepath.IsAbs(resolvedTarget) {
+				resolvedTarget = filepath.Join(filepath.Dir(fullPath), resolvedTarget)
+			}
+			if !strings.HasPrefix(resolvedTarget, dotgenDir) {
+				continue
+			}
 			broken := false
-			if !strings.HasPrefix(target, dotgenDir) && !strings.Contains(target, ".dotagen") {
-				continue
-			}
-			if _, err := os.Stat(target); err != nil {
+			if _, err := os.Stat(resolvedTarget); err != nil {
 				broken = true
 			}
 			links = append(links, SymlinkInfo{
@@ -174,8 +162,8 @@ func FindDotagenSymlinks(projectDir string) ([]SymlinkInfo, error) {
 	return links, nil
 }
 
-func RemoveStaleSymlinks(projectDir string, activeAgentNames []string, syncTargets []string) ([]string, error) {
-	links, err := FindDotagenSymlinks(projectDir)
+func RemoveStaleSymlinks(projectDir string, dotgenDir string, activeAgentNames []string, syncTargets []string) ([]string, error) {
+	links, err := FindDotagenSymlinks(projectDir, dotgenDir)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +181,9 @@ func RemoveStaleSymlinks(projectDir string, activeAgentNames []string, syncTarge
 		if activeSet[key] {
 			continue
 		}
-		os.Remove(link.Path)
+		if err := os.Remove(link.Path); err != nil {
+			continue
+		}
 		rel, _ := filepath.Rel(projectDir, link.Path)
 		removed = append(removed, rel)
 	}

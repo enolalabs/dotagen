@@ -45,9 +45,9 @@ func TestParseAgentsDir(t *testing.T) {
 	agentsDir := filepath.Join(dir, "agents")
 	require.NoError(t, os.MkdirAll(agentsDir, 0o755))
 
-	os.WriteFile(filepath.Join(agentsDir, "a.md"), []byte("# A"), 0o644)
-	os.WriteFile(filepath.Join(agentsDir, "b.md"), []byte("# B"), 0o644)
-	os.WriteFile(filepath.Join(agentsDir, "readme.txt"), []byte("not md"), 0o644)
+	require.NoError(t, os.WriteFile(filepath.Join(agentsDir, "a.md"), []byte("# A"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(agentsDir, "b.md"), []byte("# B"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(agentsDir, "readme.txt"), []byte("not md"), 0o644))
 
 	agents, err := ParseAgentsDir(agentsDir)
 	require.NoError(t, err)

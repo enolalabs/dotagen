@@ -1,7 +1,6 @@
 package web
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -9,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/adrg/frontmatter"
@@ -31,7 +31,9 @@ func (s *Server) projectDir() (string, error) {
 func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(v)
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		log.Printf("failed to encode JSON response: %v", err)
+	}
 }
 
 func writeError(w http.ResponseWriter, status int, msg string) {
@@ -41,6 +43,15 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 func isValidAgentName(name string) bool {
 	clean := strings.TrimPrefix(name, "da-")
 	return validNameRe.MatchString(clean)
+}
+
+func isValidTarget(name string) bool {
+	for _, t := range config.ValidTargets {
+		if t == name {
+			return true
+		}
+	}
+	return false
 }
 
 func buildContentWithFrontmatter(content, description, category string) string {
@@ -66,14 +77,23 @@ func buildContentWithFrontmatter(content, description, category string) string {
 		return content
 	}
 
-	var buf bytes.Buffer
-	buf.WriteString("---\n")
-	for k, v := range fm {
-		buf.WriteString(fmt.Sprintf("%s: %s\n", k, v))
+	sortedKeys := make([]string, 0, len(fm))
+	for k := range fm {
+		sortedKeys = append(sortedKeys, k)
 	}
-	buf.WriteString("---\n\n")
-	buf.WriteString(content)
-	return buf.String()
+	sort.Strings(sortedKeys)
+
+	fmData := make(map[string]string)
+	for _, k := range sortedKeys {
+		fmData[k] = fm[k]
+	}
+
+	fmBytes, err := yaml.Marshal(fmData)
+	if err != nil {
+		return content
+	}
+
+	return fmt.Sprintf("---\n%s---\n\n%s", string(fmBytes), content)
 }
 
 func (s *Server) handleGetConfig(w http.ResponseWriter, r *http.Request) {
@@ -82,6 +102,8 @@ func (s *Server) handleGetConfig(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err.Error())
 		return
 	}
+	s.lock()
+	defer s.unlock()
 	cfg, err := config.LoadConfig(dotgenDir)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
@@ -105,6 +127,8 @@ func (s *Server) handleUpdateConfig(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	s.lock()
+	defer s.unlock()
 	data, err := yaml.Marshal(&cfg)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to marshal config")
@@ -167,6 +191,10 @@ func (s *Server) handleGetAgent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	name := r.PathValue("name")
+	if !isValidAgentName(name) {
+		writeError(w, http.StatusBadRequest, "invalid agent name")
+		return
+	}
 	filePath := filepath.Join(dotgenDir, "agents", name+".md")
 	a, err := agent.ParseAgentFile(filePath)
 	if err != nil {
@@ -215,9 +243,12 @@ func (s *Server) handleCreateAgent(w http.ResponseWriter, r *http.Request) {
 
 	content := body.Content
 	if content == "" {
-		content = scaffoldAgentContent(body.Name)
+		content = agent.ScaffoldContent(body.Name)
 	}
 	content = buildContentWithFrontmatter(content, body.Description, body.Category)
+
+	s.lock()
+	defer s.unlock()
 
 	if err := os.MkdirAll(agentsDir, 0o755); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
@@ -244,13 +275,6 @@ func (s *Server) handleCreateAgent(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func scaffoldAgentContent(name string) string {
-	title := strings.TrimPrefix(name, "da-")
-	title = strings.ReplaceAll(title, "-", " ")
-	title = strings.Title(title)
-	return fmt.Sprintf("# %s\n\n## Role\n\nTODO: Describe the agent's role.\n\n## Guidelines\n\n- Guideline 1\n- Guideline 2\n", title)
-}
-
 func (s *Server) handleUpdateAgent(w http.ResponseWriter, r *http.Request) {
 	dotgenDir, err := s.dotgenDir()
 	if err != nil {
@@ -258,6 +282,10 @@ func (s *Server) handleUpdateAgent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	name := r.PathValue("name")
+	if !isValidAgentName(name) {
+		writeError(w, http.StatusBadRequest, "invalid agent name")
+		return
+	}
 	var body struct {
 		Content     string   `json:"content"`
 		Description string   `json:"description"`
@@ -280,6 +308,14 @@ func (s *Server) handleUpdateAgent(w http.ResponseWriter, r *http.Request) {
 		content = buildContentWithFrontmatter(content, body.Description, body.Category)
 	}
 
+	if strings.TrimSpace(content) == "" {
+		writeError(w, http.StatusBadRequest, "agent content cannot be empty")
+		return
+	}
+
+	s.lock()
+	defer s.unlock()
+
 	if err := os.WriteFile(filePath, []byte(content), 0o644); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -301,6 +337,12 @@ func (s *Server) handleDeleteAgent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	name := r.PathValue("name")
+	if !isValidAgentName(name) {
+		writeError(w, http.StatusBadRequest, "invalid agent name")
+		return
+	}
+	s.lock()
+	defer s.unlock()
 	filePath := filepath.Join(dotgenDir, "agents", name+".md")
 	if err := os.Remove(filePath); err != nil {
 		writeError(w, http.StatusNotFound, "agent not found")
@@ -326,6 +368,15 @@ func (s *Server) handlePreview(w http.ResponseWriter, r *http.Request) {
 	}
 	agentName := r.PathValue("agent")
 	targetName := r.PathValue("target")
+
+	if !isValidAgentName(agentName) {
+		writeError(w, http.StatusBadRequest, "invalid agent name")
+		return
+	}
+	if !isValidTarget(targetName) {
+		writeError(w, http.StatusBadRequest, "invalid target")
+		return
+	}
 
 	a, err := agent.ParseAgentFile(filepath.Join(dotgenDir, "agents", agentName+".md"))
 	if err != nil {
@@ -361,6 +412,9 @@ func (s *Server) handleSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.lock()
+	defer s.unlock()
+
 	cfg, err := config.LoadConfig(dotgenDir)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
@@ -392,6 +446,10 @@ func (s *Server) handleSync(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleSyncTarget(w http.ResponseWriter, r *http.Request) {
 	targetName := r.PathValue("target")
+	if !isValidTarget(targetName) {
+		writeError(w, http.StatusBadRequest, "invalid target")
+		return
+	}
 	dotgenDir, err := s.dotgenDir()
 	if err != nil {
 		writeError(w, http.StatusNotFound, err.Error())
@@ -402,6 +460,9 @@ func (s *Server) handleSyncTarget(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	s.lock()
+	defer s.unlock()
 
 	cfg, err := config.LoadConfig(dotgenDir)
 	if err != nil {
@@ -454,7 +515,10 @@ func (s *Server) handleClean(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	links, err := engine.FindDotagenSymlinks(projectDir)
+	s.lock()
+	defer s.unlock()
+
+	links, err := engine.FindDotagenSymlinks(projectDir, dotgenDir)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -466,18 +530,26 @@ func (s *Server) handleClean(w http.ResponseWriter, r *http.Request) {
 			removed++
 		}
 	}
-	engine.RemoveGeneratedContents(dotgenDir)
+	if err := engine.RemoveGeneratedContents(dotgenDir); err != nil {
+		writeError(w, http.StatusInternalServerError, fmt.Sprintf("removed %d symlinks but failed to clean generated: %v", removed, err))
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]int{"removed": removed})
 }
 
 func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
+	dotgenDir, err := s.dotgenDir()
+	if err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
 	projectDir, err := config.GetProjectDir()
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	links, err := engine.FindDotagenSymlinks(projectDir)
+	links, err := engine.FindDotagenSymlinks(projectDir, dotgenDir)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return

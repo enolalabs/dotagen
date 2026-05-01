@@ -2,12 +2,13 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 
 	"github.com/spf13/cobra"
 )
 
-var version = "2.0.3"
+var version = "dev"
 
 var rootCmd = &cobra.Command{
 	Use:   "dotagen",
@@ -47,7 +48,8 @@ func banner() string {
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 }
 

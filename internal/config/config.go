@@ -9,10 +9,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var CLAUDE_CODE_ROOT_PATH = ".claude/agents"
-var CURSOR_ROOT_PATH = ".cursor/agents"
-var GEMINI_CLI_ROOT_PATH = ".gemini/agents"
-var OPEN_CODE_ROOT_PATH = ".config/opencode/agents"
+const ClaudeCodeRootPath = ".claude/agents"
+const CursorRootPath = ".cursor/agents"
+const GeminiCliRootPath = ".gemini/agents"
+const OpenCodeRootPath = ".config/opencode/agents"
 
 var ValidTargets = []string{"claude-code", "cursor", "gemini-cli", "opencode"}
 
@@ -156,10 +156,10 @@ func GetProjectDir() (string, error) {
 func DetectPlatforms(homeDir string) []string {
 	var detected []string
 	checks := map[string]string{
-		CLAUDE_CODE_ROOT_PATH: "claude-code",
-		CURSOR_ROOT_PATH:      "cursor",
-		GEMINI_CLI_ROOT_PATH:  "gemini-cli",
-		OPEN_CODE_ROOT_PATH:   "opencode",
+		ClaudeCodeRootPath: "claude-code",
+		CursorRootPath:     "cursor",
+		GeminiCliRootPath:  "gemini-cli",
+		OpenCodeRootPath:   "opencode",
 	}
 	for dir, platform := range checks {
 		if _, err := os.Stat(filepath.Join(homeDir, dir)); err == nil {

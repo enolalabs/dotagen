@@ -26,7 +26,7 @@ var cleanCmd = &cobra.Command{
 			return err
 		}
 
-		links, err := engine.FindDotagenSymlinks(projectDir)
+		links, err := engine.FindDotagenSymlinks(projectDir, dotgenDir)
 		if err != nil {
 			return fmt.Errorf("failed to find symlinks: %w", err)
 		}

@@ -9,7 +9,6 @@ import (
 
 var (
 	servePort int
-	serveOpen bool
 )
 
 var serveCmd = &cobra.Command{
@@ -28,6 +27,5 @@ var serveCmd = &cobra.Command{
 
 func init() {
 	serveCmd.Flags().IntVar(&servePort, "port", 7890, "Port to serve the dashboard on")
-	serveCmd.Flags().BoolVar(&serveOpen, "open", true, "Open browser automatically")
 	rootCmd.AddCommand(serveCmd)
 }

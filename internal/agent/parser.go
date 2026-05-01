@@ -15,7 +15,7 @@ func ParseAgentsDir(agentsDir string) ([]Agent, error) {
 		return nil, fmt.Errorf("failed to read agents directory: %w", err)
 	}
 
-	var agents []Agent
+	agents := make([]Agent, 0, len(entries))
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
 			continue

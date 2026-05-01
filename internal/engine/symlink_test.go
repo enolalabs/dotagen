@@ -84,7 +84,7 @@ func TestRemoveStaleSymlinks(t *testing.T) {
 	CreateSymlink(activeFile, filepath.Join(claudeDir, "da-active.md"))
 	CreateSymlink(staleFile, filepath.Join(claudeDir, "da-stale.md"))
 
-	removed, err := RemoveStaleSymlinks(dir, []string{"da-active"}, []string{"claude-code"})
+	removed, err := RemoveStaleSymlinks(dir, dotgenDir, []string{"da-active"}, []string{"claude-code"})
 	require.NoError(t, err)
 	assert.Equal(t, []string{filepath.Join(".claude", "agents", "da-stale.md")}, removed)
 
@@ -110,7 +110,7 @@ func TestFindDotagenSymlinksSkipsNonDaAgents(t *testing.T) {
 	CreateSymlink(daFile, filepath.Join(claudeDir, "da-myagent.md"))
 	CreateSymlink(userFile, filepath.Join(claudeDir, "my-custom-agent.md"))
 
-	links, err := FindDotagenSymlinks(dir)
+	links, err := FindDotagenSymlinks(dir, dotgenDir)
 	require.NoError(t, err)
 
 	assert.Len(t, links, 1)
