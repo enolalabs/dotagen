@@ -147,7 +147,7 @@ async function loadDashboard() {
 
         if (allAgents.length === 0) {
             document.getElementById('dashboard-stats').innerHTML = '';
-            document.querySelector('#page-dashboard .quick-actions-row').innerHTML = `
+            document.getElementById('dashboard-actions').innerHTML = `
                 <div class="empty-state" style="width:100%">
                     <div class="empty-icon">&#128640;</div>
                     <h3>No agents yet</h3>
@@ -156,6 +156,28 @@ async function loadDashboard() {
                 </div>`;
             return;
         }
+
+        document.getElementById('dashboard-stats').innerHTML = `
+            <div class="stat-card">
+                <div class="stat-value" id="stat-agents">-</div>
+                <div class="stat-label">Total Agents</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-targets">-</div>
+                <div class="stat-label">Targets</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-synced">-</div>
+                <div class="stat-label">Synced</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-categories">-</div>
+                <div class="stat-label">Categories</div>
+            </div>`;
+        document.getElementById('dashboard-actions').innerHTML = `
+            <button class="m3-btn m3-btn-filled" onclick="triggerSync()">Sync All</button>
+            <button class="m3-btn m3-btn-outlined" onclick="triggerClean()">Clean All</button>
+            <button class="m3-btn m3-btn-tonal" onclick="navigateTo('agents')">Manage Agents</button>`;
 
         document.getElementById('stat-agents').textContent = allAgents.length;
         document.getElementById('stat-targets').textContent = (config.targets || []).length;
