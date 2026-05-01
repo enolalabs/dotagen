@@ -1,18 +1,24 @@
 package web
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
+	"github.com/adrg/frontmatter"
 	"github.com/enolalabs/dotagen/v2/internal/agent"
 	"github.com/enolalabs/dotagen/v2/internal/config"
 	"github.com/enolalabs/dotagen/v2/internal/engine"
 	"gopkg.in/yaml.v3"
 )
+
+var validNameRe = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
 
 func (s *Server) dotgenDir() (string, error) {
 	return config.FindDotgenDir()
@@ -30,6 +36,44 @@ func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 
 func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, map[string]string{"error": msg})
+}
+
+func isValidAgentName(name string) bool {
+	clean := strings.TrimPrefix(name, "da-")
+	return validNameRe.MatchString(clean)
+}
+
+func buildContentWithFrontmatter(content, description, category string) string {
+	fm := make(map[string]string)
+
+	if strings.HasPrefix(strings.TrimSpace(content), "---") {
+		var existing map[string]string
+		body, err := frontmatter.Parse(strings.NewReader(content), &existing)
+		if err == nil {
+			fm = existing
+			content = strings.TrimSpace(string(body))
+		}
+	}
+
+	if description != "" {
+		fm["description"] = description
+	}
+	if category != "" {
+		fm["category"] = category
+	}
+
+	if len(fm) == 0 {
+		return content
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString("---\n")
+	for k, v := range fm {
+		buf.WriteString(fmt.Sprintf("%s: %s\n", k, v))
+	}
+	buf.WriteString("---\n\n")
+	buf.WriteString(content)
+	return buf.String()
 }
 
 func (s *Server) handleGetConfig(w http.ResponseWriter, r *http.Request) {
@@ -131,6 +175,7 @@ func (s *Server) handleCreateAgent(w http.ResponseWriter, r *http.Request) {
 		Name        string   `json:"name"`
 		Content     string   `json:"content"`
 		Description string   `json:"description"`
+		Category    string   `json:"category"`
 		Targets     []string `json:"targets"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -139,6 +184,10 @@ func (s *Server) handleCreateAgent(w http.ResponseWriter, r *http.Request) {
 	}
 	if body.Name == "" {
 		writeError(w, http.StatusBadRequest, "name is required")
+		return
+	}
+	if !isValidAgentName(body.Name) {
+		writeError(w, http.StatusBadRequest, "name must contain only alphanumeric characters, hyphens, and underscores")
 		return
 	}
 
@@ -157,10 +206,7 @@ func (s *Server) handleCreateAgent(w http.ResponseWriter, r *http.Request) {
 	if content == "" {
 		content = scaffoldAgentContent(body.Name)
 	}
-
-	if body.Description != "" {
-		content = fmt.Sprintf("---\ndescription: %s\n---\n\n%s", body.Description, content)
-	}
+	content = buildContentWithFrontmatter(content, body.Description, body.Category)
 
 	if err := os.MkdirAll(agentsDir, 0o755); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
@@ -173,7 +219,7 @@ func (s *Server) handleCreateAgent(w http.ResponseWriter, r *http.Request) {
 
 	targets := body.Targets
 	if len(targets) == 0 {
-		targets = []string{"all"}
+		targets = config.ValidTargets
 	}
 	if err := config.AddAgentToConfig(dotgenDir, body.Name, targets); err != nil {
 		os.Remove(filePath)
@@ -202,17 +248,38 @@ func (s *Server) handleUpdateAgent(w http.ResponseWriter, r *http.Request) {
 	}
 	name := r.PathValue("name")
 	var body struct {
-		Content string `json:"content"`
+		Content     string   `json:"content"`
+		Description string   `json:"description"`
+		Category    string   `json:"category"`
+		Targets     []string `json:"targets"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid JSON")
 		return
 	}
+
 	filePath := filepath.Join(dotgenDir, "agents", name+".md")
-	if err := os.WriteFile(filePath, []byte(body.Content), 0o644); err != nil {
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		writeError(w, http.StatusNotFound, "agent not found")
+		return
+	}
+
+	content := body.Content
+	if body.Description != "" || body.Category != "" {
+		content = buildContentWithFrontmatter(content, body.Description, body.Category)
+	}
+
+	if err := os.WriteFile(filePath, []byte(content), 0o644); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	if len(body.Targets) > 0 {
+		if err := config.AddAgentToConfig(dotgenDir, name, body.Targets); err != nil {
+			log.Printf("failed to update config targets for %s: %v", name, err)
+		}
+	}
+
 	writeJSON(w, http.StatusOK, map[string]string{"name": name})
 }
 
@@ -227,6 +294,9 @@ func (s *Server) handleDeleteAgent(w http.ResponseWriter, r *http.Request) {
 	if err := os.Remove(filePath); err != nil {
 		writeError(w, http.StatusNotFound, "agent not found")
 		return
+	}
+	if err := config.RemoveAgentFromConfig(dotgenDir, name); err != nil {
+		log.Printf("failed to remove %s from config: %v", name, err)
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"deleted": name})
 }

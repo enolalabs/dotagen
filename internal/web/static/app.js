@@ -4,6 +4,7 @@ let selectedCategory = 'all';
 let searchQuery = '';
 let selectedAgent = null;
 let currentPage = 'dashboard';
+let lastFocusedElement = null;
 
 const CATEGORIES = {
     'core-dev': 'Core Development',
@@ -43,6 +44,16 @@ function escapeHtml(str) {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+function showLoading(containerId) {
+    const el = document.getElementById(containerId);
+    if (el) el.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div><p>Loading...</p></div>';
+}
+
+function showError(containerId, message) {
+    const el = document.getElementById(containerId);
+    if (el) el.innerHTML = `<div class="empty-state"><div class="empty-icon">&#9888;</div><h3>Error</h3><p>${escapeHtml(message)}</p></div>`;
+}
+
 function renderMarkdown(text) {
     if (!text) return '';
     let html = escapeHtml(text);
@@ -79,7 +90,7 @@ function renderMarkdown(text) {
     return html;
 }
 
-function showSnackbar(message, duration = 3000) {
+function showSnackbar(message, duration = 4000) {
     const el = document.getElementById('snackbar');
     el.textContent = message;
     el.classList.add('show');
@@ -102,6 +113,8 @@ function navigateTo(page) {
     document.getElementById('topbar-title').textContent = PAGE_TITLES[page] || page;
     document.getElementById('app').classList.remove('nav-open');
 
+    document.getElementById('main-content').scrollTop = 0;
+
     loadPage(page);
 }
 
@@ -123,6 +136,7 @@ function loadPage(page) {
 }
 
 async function loadDashboard() {
+    showLoading('dashboard-stats');
     try {
         const [agents, config, status] = await Promise.all([
             api('/api/agents'),
@@ -130,6 +144,19 @@ async function loadDashboard() {
             api('/api/status'),
         ]);
         allAgents = agents || [];
+
+        if (allAgents.length === 0) {
+            document.getElementById('dashboard-stats').innerHTML = '';
+            document.querySelector('#page-dashboard .quick-actions-row').innerHTML = `
+                <div class="empty-state" style="width:100%">
+                    <div class="empty-icon">&#128640;</div>
+                    <h3>No agents yet</h3>
+                    <p>Create your first agent or run <code>dotagen init</code> to get started with built-in agents.</p>
+                    <button class="m3-btn m3-btn-filled" onclick="navigateTo('agents')" style="margin-top:16px">Create Agent</button>
+                </div>`;
+            return;
+        }
+
         document.getElementById('stat-agents').textContent = allAgents.length;
         document.getElementById('stat-targets').textContent = (config.targets || []).length;
         document.getElementById('stat-synced').textContent = (status.symlinks || []).filter(s => !s.broken).length;
@@ -137,18 +164,19 @@ async function loadDashboard() {
         const cats = new Set(allAgents.map(a => a.category).filter(Boolean));
         document.getElementById('stat-categories').textContent = cats.size;
     } catch (e) {
-        console.error(e);
+        showError('dashboard-stats', e.message);
     }
 }
 
 async function loadAgents() {
+    showLoading('agents-grid');
     try {
         const agents = await api('/api/agents');
         allAgents = agents || [];
         renderCategoryChips();
         renderAgentsGrid();
     } catch (e) {
-        console.error(e);
+        showError('agents-grid', e.message);
     }
 }
 
@@ -224,7 +252,7 @@ function renderAgentsGrid() {
     grid.innerHTML = filtered.map(a => {
         const catLabel = CATEGORIES[a.category] || a.category || '';
         const isSelected = selectedAgent && selectedAgent.name === a.name;
-        return `<div class="agent-card ${isSelected ? 'selected' : ''}" onclick="selectAgent('${escapeHtml(a.name)}')">
+        return `<div class="agent-card ${isSelected ? 'selected' : ''}" tabindex="0" onclick="selectAgent('${escapeHtml(a.name)}')" onkeydown="if(event.key==='Enter')selectAgent('${escapeHtml(a.name)}')">
             <div class="agent-card-header">
                 <h3>${escapeHtml(a.name)}</h3>
                 ${catLabel ? `<span class="agent-card-category">${escapeHtml(catLabel)}</span>` : ''}
@@ -241,7 +269,7 @@ async function selectAgent(name) {
         openDetailPanel(a);
         renderAgentsGrid();
     } catch (e) {
-        showSnackbar('Failed to load agent: ' + e.message);
+        showSnackbar('Failed to load agent: ' + e.message, 6000);
     }
 }
 
@@ -303,91 +331,147 @@ async function showCreateAgent() {
 
     document.getElementById('modal-title').textContent = 'Create Agent';
     document.getElementById('modal-body').innerHTML = `
-        <label>Agent Name</label>
-        <input type="text" class="m3-input" id="agent-name" placeholder="my-agent">
-        <label>Description</label>
+        <label for="agent-name">Agent Name</label>
+        <input type="text" class="m3-input" id="agent-name" placeholder="my-agent" aria-required="true">
+        <div class="m3-input-error-msg" id="agent-name-error" style="display:none"></div>
+        <label for="agent-description">Description</label>
         <input type="text" class="m3-input" id="agent-description" placeholder="Short description of the agent">
-        <label>Category</label>
+        <label for="agent-category">Category</label>
         <select class="m3-select" id="agent-category" style="width:100%">${categoryOptions}</select>
         <label>Targets</label>
         <div class="target-checkboxes">${targetCheckboxes}</div>
-        <label>Content (Markdown)</label>
+        <label for="agent-content">Content (Markdown)</label>
         <textarea class="m3-textarea" id="agent-content" placeholder="# My Agent\n\n## Role\n\nDescribe the agent's role.\n\n## Guidelines\n\n- Guideline 1\n- Guideline 2"></textarea>
     `;
     document.getElementById('modal-actions').innerHTML = `
         <button class="m3-btn m3-btn-text" onclick="closeModal()">Cancel</button>
         <button class="m3-btn m3-btn-filled" onclick="createAgent()">Create</button>
     `;
-    document.getElementById('modal').classList.remove('hidden');
+    openModal();
+}
+
+function clearValidation() {
+    document.querySelectorAll('.m3-input-error').forEach(el => el.classList.remove('m3-input-error'));
+    document.querySelectorAll('.m3-input-error-msg').forEach(el => { el.style.display = 'none'; el.textContent = ''; });
+}
+
+function showFieldError(fieldId, message) {
+    const field = document.getElementById(fieldId);
+    const errorEl = document.getElementById(fieldId + '-error');
+    if (field) field.classList.add('m3-input-error');
+    if (errorEl) {
+        errorEl.textContent = message;
+        errorEl.style.display = 'block';
+    }
 }
 
 async function createAgent() {
+    clearValidation();
     const name = document.getElementById('agent-name').value.trim();
     const description = document.getElementById('agent-description').value.trim();
     const category = document.getElementById('agent-category').value;
     const content = document.getElementById('agent-content').value;
 
     if (!name) {
-        showSnackbar('Name is required');
+        showFieldError('agent-name', 'Name is required');
+        return;
+    }
+    const cleanName = name.replace(/^da-/, '');
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(cleanName)) {
+        showFieldError('agent-name', 'Name must contain only alphanumeric characters, hyphens, and underscores');
         return;
     }
 
     const checked = document.querySelectorAll('input[name="agent-target"]:checked');
     const targets = Array.from(checked).map(cb => cb.value);
-    const allTargets = document.querySelectorAll('input[name="agent-target"]');
-    const useAll = targets.length === allTargets.length;
+    if (targets.length === 0) {
+        showSnackbar('Select at least one target platform');
+        return;
+    }
 
     try {
-        let fullContent = content;
-        if (category || description) {
-            let fm = '---\n';
-            if (description) fm += `description: ${description}\n`;
-            if (category) fm += `category: ${category}\n`;
-            fm += '---\n\n';
-            fullContent = fm + (content || '');
-        }
-
         await api('/api/agents', {
             method: 'POST',
             body: JSON.stringify({
                 name,
-                content: fullContent,
+                content: content || '',
                 description: description || undefined,
-                targets: useAll ? ['all'] : targets,
+                category: category || undefined,
+                targets,
             }),
         });
         closeModal();
         showSnackbar(`Agent "${name}" created`);
         loadAgents();
     } catch (e) {
-        showSnackbar('Create failed: ' + e.message);
+        showSnackbar('Create failed: ' + e.message, 6000);
     }
 }
 
 async function editAgent(name) {
     try {
-        const a = await api('/api/agents/' + name);
+        const [a, targetsRes] = await Promise.all([
+            api('/api/agents/' + name),
+            api('/api/targets'),
+        ]);
+        const allTargets = targetsRes.targets || [];
+
+        const agentConfig = await api('/api/config').catch(() => null);
+        const agentEntry = agentConfig?.agents?.[name];
+        const currentTargets = agentEntry
+            ? resolveAgentTargets(agentEntry, allTargets)
+            : allTargets;
+
+        const categories = Object.entries(CATEGORIES);
+        let categoryOptions = '<option value="">None</option>' +
+            categories.map(([id, label]) =>
+                `<option value="${id}" ${a.category === id ? 'selected' : ''}>${escapeHtml(label)}</option>`
+            ).join('');
+
+        let targetCheckboxes = allTargets.map(t =>
+            `<label class="checkbox-label">
+                <input type="checkbox" name="edit-target" value="${escapeHtml(t)}" ${currentTargets.includes(t) ? 'checked' : ''}>
+                ${escapeHtml(t)}
+            </label>`
+        ).join('');
+
         document.getElementById('modal-title').textContent = 'Edit: ' + name;
         document.getElementById('modal-body').innerHTML = `
-            <label>Content (Markdown)</label>
+            <label for="edit-description">Description</label>
+            <input type="text" class="m3-input" id="edit-description" value="${escapeHtml(a.description || '')}">
+            <label for="edit-category">Category</label>
+            <select class="m3-select" id="edit-category" style="width:100%">${categoryOptions}</select>
+            <label>Targets</label>
+            <div class="target-checkboxes">${targetCheckboxes}</div>
+            <label for="agent-content">Content (Markdown)</label>
             <textarea class="m3-textarea" id="agent-content">${escapeHtml(a.content || '')}</textarea>
         `;
         document.getElementById('modal-actions').innerHTML = `
             <button class="m3-btn m3-btn-text" onclick="closeModal()">Cancel</button>
             <button class="m3-btn m3-btn-filled" onclick="saveAgent('${escapeHtml(name)}')">Save</button>
         `;
-        document.getElementById('modal').classList.remove('hidden');
+        openModal();
     } catch (e) {
-        showSnackbar('Failed to load agent: ' + e.message);
+        showSnackbar('Failed to load agent: ' + e.message, 6000);
     }
 }
 
 async function saveAgent(name) {
     const content = document.getElementById('agent-content').value;
+    const description = document.getElementById('edit-description').value.trim();
+    const category = document.getElementById('edit-category').value;
+    const checked = document.querySelectorAll('input[name="edit-target"]:checked');
+    const targets = Array.from(checked).map(cb => cb.value);
+
     try {
         await api('/api/agents/' + name, {
             method: 'PUT',
-            body: JSON.stringify({ content }),
+            body: JSON.stringify({
+                content,
+                description,
+                category,
+                targets,
+            }),
         });
         closeModal();
         showSnackbar(`Agent "${name}" updated`);
@@ -396,7 +480,7 @@ async function saveAgent(name) {
         }
         loadAgents();
     } catch (e) {
-        showSnackbar('Save failed: ' + e.message);
+        showSnackbar('Save failed: ' + e.message, 6000);
     }
 }
 
@@ -410,7 +494,7 @@ async function deleteAgent(name) {
         showSnackbar(`Agent "${name}" deleted`);
         loadAgents();
     } catch (e) {
-        showSnackbar('Delete failed: ' + e.message);
+        showSnackbar('Delete failed: ' + e.message, 6000);
     }
 }
 
@@ -433,6 +517,7 @@ function resolveAgentTargets(agentEntry, platforms) {
 }
 
 async function loadTargets() {
+    showLoading('target-matrix');
     try {
         const [config, agents, validResp] = await Promise.all([
             api('/api/config'),
@@ -457,7 +542,7 @@ async function loadTargets() {
         renderTargetFilterChips(enabled, agentList.length - enabled);
         renderTargetMatrix(agentList, allPlatforms, agentMap);
     } catch (e) {
-        console.error(e);
+        showError('target-matrix', e.message);
     }
 }
 
@@ -465,13 +550,13 @@ function renderTargetFilterChips(enabledCount, disabledCount) {
     const container = document.getElementById('matrix-filter-chips');
     container.innerHTML = `
         <button class="chip ${targetFilter === 'all' ? 'selected' : ''}" onclick="filterTargetView('all')">
-            <span class="chip-check">\u2713</span> All (${enabledCount + disabledCount})
+            <span class="chip-check">✓</span> All (${enabledCount + disabledCount})
         </button>
         <button class="chip ${targetFilter === 'enabled' ? 'selected' : ''}" onclick="filterTargetView('enabled')">
-            <span class="chip-check">\u2713</span> Enabled (${enabledCount})
+            <span class="chip-check">✓</span> Enabled (${enabledCount})
         </button>
         <button class="chip ${targetFilter === 'disabled' ? 'selected' : ''}" onclick="filterTargetView('disabled')">
-            <span class="chip-check">\u2713</span> Disabled (${disabledCount})
+            <span class="chip-check">✓</span> Disabled (${disabledCount})
         </button>
     `;
 }
@@ -530,7 +615,7 @@ function renderTargetMatrix(agentList, targets, agentMap) {
         targets.forEach(t => {
             const isTargeted = resolved.includes(t);
             const cellClass = isTargeted ? 'cell-enabled' : (entry.disabled ? 'cell-explicit-disabled' : 'cell-disabled');
-            const icon = isTargeted ? '\u2713' : (entry.disabled ? '\u{1F6AB}' : '\u2014');
+            const icon = isTargeted ? '✓' : (entry.disabled ? '\u{1F6AB}' : '—');
             const tooltip = isTargeted ? `Remove ${a.name} from ${t}` : `Add ${a.name} to ${t}`;
             html += `<td class="${cellClass}" title="${tooltip}" onclick="toggleAgentTarget('${escapeHtml(a.name)}', '${escapeHtml(t)}')">${icon}</td>`;
         });
@@ -565,9 +650,6 @@ async function toggleAgentTarget(agentName, targetName) {
         }
 
         entry.targets = current;
-        if (current.length === allPlatforms.length) {
-            entry.targets = ['all'];
-        }
     }
 
     try {
@@ -578,11 +660,17 @@ async function toggleAgentTarget(agentName, targetName) {
         showSnackbar(`${agentName}: ${targetName} updated`);
         loadTargets();
     } catch (e) {
-        showSnackbar('Failed to update: ' + e.message);
+        showSnackbar('Failed to update: ' + e.message, 6000);
     }
 }
 
 async function loadPreviewOptions() {
+    const output = document.getElementById('preview-output');
+    output.textContent = 'Select an agent and target to preview the rendered output.';
+
+    const copyBtn = document.getElementById('preview-copy-btn');
+    if (copyBtn) copyBtn.style.display = 'none';
+
     try {
         const [agents, targets] = await Promise.all([
             api('/api/agents'),
@@ -610,66 +698,158 @@ async function loadPreview() {
         showSnackbar('Select both agent and target');
         return;
     }
+    const output = document.getElementById('preview-output');
+    output.textContent = 'Loading preview...';
     try {
         const res = await api('/api/preview/' + agent + '/' + target);
-        document.getElementById('preview-output').textContent = res.content || '';
+        output.textContent = res.content || '';
+        const copyBtn = document.getElementById('preview-copy-btn');
+        if (copyBtn) copyBtn.style.display = 'inline-flex';
     } catch (e) {
-        document.getElementById('preview-output').textContent = 'Error: ' + e.message;
+        output.textContent = 'Error: ' + e.message;
     }
 }
 
+function copyPreview() {
+    const text = document.getElementById('preview-output').textContent;
+    navigator.clipboard.writeText(text).then(() => showSnackbar('Copied to clipboard'));
+}
+
+let statusFilter = 'all';
+let statusSearchQuery = '';
+let allStatusLinks = [];
+
 async function loadStatus() {
+    showLoading('status-content');
     try {
         const status = await api('/api/status');
-        const el = document.getElementById('status-content');
-        const links = status.symlinks || [];
-        if (links.length === 0) {
-            el.innerHTML = `<div class="empty-state">
-                <div class="empty-icon">&#128196;</div>
-                <h3>No symlinks found</h3>
-                <p>Run sync first to generate platform-specific agent files.</p>
-            </div>`;
-            return;
+        allStatusLinks = status.symlinks || [];
+
+        const controls = document.getElementById('status-controls');
+        if (controls) {
+            controls.style.display = allStatusLinks.length > 0 ? 'flex' : 'none';
         }
-        el.innerHTML = links.map(l => {
-            const cls = l.broken ? 'status-err' : 'status-ok';
-            const icon = l.broken ? '&#10005;' : '&#10003;';
-            return `<div class="status-item ${cls}">
-                <div class="status-icon">${icon}</div>
-                <span class="status-text">${escapeHtml(l.agent)} &rarr; ${escapeHtml(l.platform)}</span>
-                <span class="status-path">${escapeHtml(l.path)}</span>
-            </div>`;
-        }).join('');
+
+        renderStatusFilterChips();
+        renderStatusList();
     } catch (e) {
-        console.error(e);
+        showError('status-content', e.message);
     }
+}
+
+function renderStatusFilterChips() {
+    const container = document.getElementById('status-filter-chips');
+    if (!container) return;
+    const broken = allStatusLinks.filter(l => l.broken).length;
+    const healthy = allStatusLinks.length - broken;
+    container.innerHTML = `
+        <button class="chip ${statusFilter === 'all' ? 'selected' : ''}" onclick="filterStatusView('all')">
+            <span class="chip-check">✓</span> All (${allStatusLinks.length})
+        </button>
+        <button class="chip ${statusFilter === 'healthy' ? 'selected' : ''}" onclick="filterStatusView('healthy')">
+            <span class="chip-check">✓</span> Healthy (${healthy})
+        </button>
+        <button class="chip ${statusFilter === 'broken' ? 'selected' : ''}" onclick="filterStatusView('broken')">
+            <span class="chip-check">✓</span> Broken (${broken})
+        </button>
+    `;
+}
+
+function filterStatusView(filter) {
+    statusFilter = filter;
+    renderStatusFilterChips();
+    renderStatusList();
+}
+
+function filterStatus() {
+    statusSearchQuery = document.getElementById('status-search').value.toLowerCase().trim();
+    renderStatusList();
+}
+
+function renderStatusList() {
+    const el = document.getElementById('status-content');
+    let links = allStatusLinks;
+
+    if (statusFilter === 'healthy') {
+        links = links.filter(l => !l.broken);
+    } else if (statusFilter === 'broken') {
+        links = links.filter(l => l.broken);
+    }
+
+    if (statusSearchQuery) {
+        links = links.filter(l =>
+            l.agent.toLowerCase().includes(statusSearchQuery) ||
+            l.platform.toLowerCase().includes(statusSearchQuery) ||
+            l.path.toLowerCase().includes(statusSearchQuery)
+        );
+    }
+
+    if (links.length === 0) {
+        el.innerHTML = `<div class="empty-state">
+            <div class="empty-icon">&#128196;</div>
+            <h3>${allStatusLinks.length === 0 ? 'No symlinks found' : 'No matching symlinks'}</h3>
+            <p>${allStatusLinks.length === 0 ? 'Run sync first to generate platform-specific agent files.' : 'Try adjusting your filter or search.'}</p>
+        </div>`;
+        return;
+    }
+
+    el.innerHTML = links.map(l => {
+        const cls = l.broken ? 'status-err' : 'status-ok';
+        const icon = l.broken ? '&#10005;' : '&#10003;';
+        return `<div class="status-item ${cls}">
+            <div class="status-icon">${icon}</div>
+            <span class="status-text">${escapeHtml(l.agent)} &rarr; ${escapeHtml(l.platform)}</span>
+            <span class="status-path">${escapeHtml(l.path)}</span>
+        </div>`;
+    }).join('');
 }
 
 async function triggerSync() {
+    if (!confirm('Sync all agents to detected platforms?')) return;
+    const btns = document.querySelectorAll('[onclick*="triggerSync"]');
+    btns.forEach(b => { b.classList.add('m3-btn-loading'); b.disabled = true; });
     try {
         const res = await api('/api/sync', { method: 'POST' });
         showSnackbar(`Synced ${res.synced || 0} agents`);
         if (currentPage === 'status') loadStatus();
         if (currentPage === 'dashboard') loadDashboard();
     } catch (e) {
-        showSnackbar('Sync failed: ' + e.message);
+        showSnackbar('Sync failed: ' + e.message, 6000);
+    } finally {
+        btns.forEach(b => { b.classList.remove('m3-btn-loading'); b.disabled = false; });
     }
 }
 
 async function triggerClean() {
     if (!confirm('Remove all generated files and symlinks?')) return;
+    const btns = document.querySelectorAll('[onclick*="triggerClean"]');
+    btns.forEach(b => { b.classList.add('m3-btn-loading'); b.disabled = true; });
     try {
         const res = await api('/api/clean', { method: 'POST' });
         showSnackbar(`Cleaned ${res.removed || 0} files`);
         if (currentPage === 'status') loadStatus();
         if (currentPage === 'dashboard') loadDashboard();
     } catch (e) {
-        showSnackbar('Clean failed: ' + e.message);
+        showSnackbar('Clean failed: ' + e.message, 6000);
+    } finally {
+        btns.forEach(b => { b.classList.remove('m3-btn-loading'); b.disabled = false; });
     }
+}
+
+function openModal() {
+    lastFocusedElement = document.activeElement;
+    document.getElementById('modal').classList.remove('hidden');
+    const firstInput = document.querySelector('.modal-surface input, .modal-surface select, .modal-surface textarea');
+    if (firstInput) firstInput.focus();
 }
 
 function closeModal() {
     document.getElementById('modal').classList.add('hidden');
+    clearValidation();
+    if (lastFocusedElement) {
+        lastFocusedElement.focus();
+        lastFocusedElement = null;
+    }
 }
 
 document.getElementById('modal').addEventListener('click', e => {
@@ -682,6 +862,20 @@ document.addEventListener('keydown', e => {
             closeModal();
         } else if (document.getElementById('app').classList.contains('detail-open')) {
             closeDetail();
+        }
+    }
+    if (e.key === 'Tab' && !document.getElementById('modal').classList.contains('hidden')) {
+        const modal = document.querySelector('.modal-surface');
+        const focusable = modal.querySelectorAll('input, select, textarea, button:not([disabled])');
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
         }
     }
 });

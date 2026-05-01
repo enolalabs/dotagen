@@ -9,57 +9,57 @@
 </head>
 <body>
     <div class="app-layout" id="app">
-        <nav class="nav-drawer" id="nav-drawer">
+        <nav class="nav-drawer" id="nav-drawer" role="navigation" aria-label="Main navigation">
             <div class="nav-header">
                 <h1>dotagen</h1>
                 <div class="tagline">sub-agents, everywhere</div>
             </div>
             <div class="nav-section">
                 <div class="nav-section-label">Navigation</div>
-                <a class="nav-item active" data-page="dashboard">
+                <a class="nav-item active" data-page="dashboard" href="#">
                     <span class="nav-icon">&#9632;</span>
                     Dashboard
                 </a>
-                <a class="nav-item" data-page="agents">
+                <a class="nav-item" data-page="agents" href="#">
                     <span class="nav-icon">&#9881;</span>
                     Agents
                 </a>
-                <a class="nav-item" data-page="targets">
+                <a class="nav-item" data-page="targets" href="#">
                     <span class="nav-icon">&#9741;</span>
                     Targets
                 </a>
-                <a class="nav-item" data-page="preview">
+                <a class="nav-item" data-page="preview" href="#">
                     <span class="nav-icon">&#128196;</span>
                     Preview
                 </a>
-                <a class="nav-item" data-page="status">
+                <a class="nav-item" data-page="status" href="#">
                     <span class="nav-icon">&#10003;</span>
                     Status
                 </a>
             </div>
             <div class="nav-footer">
-                <button class="m3-btn m3-btn-filled" onclick="triggerSync()" style="width:100%">
+                <button class="m3-btn m3-btn-filled" onclick="triggerSync()" style="width:100%" aria-label="Sync all agents">
                     Sync All
                 </button>
-                <button class="m3-btn m3-btn-outlined" onclick="triggerClean()" style="width:100%">
+                <button class="m3-btn m3-btn-outlined" onclick="triggerClean()" style="width:100%" aria-label="Clean all generated files">
                     Clean
                 </button>
             </div>
         </nav>
 
         <header class="topbar">
-            <button class="m3-btn-icon" id="nav-toggle" onclick="toggleNav()">&#9776;</button>
+            <button class="m3-btn-icon" id="nav-toggle" onclick="toggleNav()" aria-label="Toggle navigation menu">&#9776;</button>
             <span class="topbar-title" id="topbar-title">Dashboard</span>
             <div class="topbar-search">
                 <span class="search-icon">&#128269;</span>
-                <input type="text" id="global-search" placeholder="Search agents..." oninput="handleSearch(this.value)">
+                <input type="text" id="global-search" placeholder="Search agents..." aria-label="Search agents" oninput="handleSearch(this.value)">
             </div>
             <div class="topbar-actions">
-                <button class="m3-btn-icon" onclick="triggerSync()" title="Sync All">&#10227;</button>
+                <button class="m3-btn-icon" onclick="triggerSync()" title="Sync All" aria-label="Sync all agents">&#10227;</button>
             </div>
         </header>
 
-        <main class="main-content" id="main-content">
+        <main class="main-content" id="main-content" role="main">
             <div id="page-dashboard" class="page active">
                 <h2 class="page-title">Dashboard</h2>
                 <p class="page-subtitle">Overview of your agent configuration and sync status.</p>
@@ -129,13 +129,17 @@
                 <p class="page-subtitle">Preview rendered output for a specific target platform.</p>
                 <div class="preview-section">
                     <div class="preview-controls">
-                        <select class="m3-select" id="preview-agent">
+                        <select class="m3-select" id="preview-agent" aria-label="Select agent">
                             <option value="">Select agent</option>
                         </select>
-                        <select class="m3-select" id="preview-target">
+                        <select class="m3-select" id="preview-target" aria-label="Select target platform">
                             <option value="">Select target</option>
                         </select>
                         <button class="m3-btn m3-btn-filled" onclick="loadPreview()">Preview</button>
+                    </div>
+                    <div class="preview-output-header">
+                        <span class="preview-output-label">Rendered output</span>
+                        <button class="m3-btn m3-btn-text" id="preview-copy-btn" onclick="copyPreview()" style="display:none;font-size:13px;height:32px;padding:0 12px;">Copy</button>
                     </div>
                     <div class="preview-output">
                         <pre id="preview-output"></pre>
@@ -146,14 +150,18 @@
             <div id="page-status" class="page">
                 <h2 class="page-title">Sync Status</h2>
                 <p class="page-subtitle">Current state of generated files and symlinks.</p>
+                <div class="status-controls" id="status-controls" style="display:none;">
+                    <div class="status-filter-chips" id="status-filter-chips"></div>
+                    <input type="text" id="status-search" class="status-search-input" placeholder="Filter by agent or platform..." aria-label="Filter symlinks" oninput="filterStatus()">
+                </div>
                 <div class="status-list" id="status-content"></div>
             </div>
         </main>
 
-        <aside class="detail-panel" id="detail-panel">
+        <aside class="detail-panel" id="detail-panel" role="complementary" aria-label="Agent details">
             <div class="detail-header">
                 <h3 id="detail-title">Agent</h3>
-                <button class="m3-btn-icon" onclick="closeDetail()">&#10005;</button>
+                <button class="m3-btn-icon" onclick="closeDetail()" aria-label="Close detail panel">&#10005;</button>
             </div>
             <div class="detail-body" id="detail-body"></div>
             <div class="detail-actions" id="detail-actions">
@@ -163,18 +171,18 @@
         </aside>
     </div>
 
-    <div id="modal" class="modal-overlay hidden">
+    <div id="modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div class="modal-surface">
             <div class="modal-header">
                 <h3 id="modal-title">Create Agent</h3>
-                <button class="m3-btn-icon" onclick="closeModal()">&#10005;</button>
+                <button class="m3-btn-icon" onclick="closeModal()" aria-label="Close dialog">&#10005;</button>
             </div>
             <div class="modal-body" id="modal-body"></div>
             <div class="modal-actions" id="modal-actions"></div>
         </div>
     </div>
 
-    <div class="snackbar" id="snackbar"></div>
+    <div class="snackbar" id="snackbar" aria-live="polite"></div>
 
     <script src="/app.js"></script>
 </body>

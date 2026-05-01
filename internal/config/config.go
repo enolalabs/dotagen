@@ -128,6 +128,15 @@ func AddAgentToConfig(dotgenDir string, name string, targets []string) error {
 	return SaveConfig(dotgenDir, cfg)
 }
 
+func RemoveAgentFromConfig(dotgenDir string, name string) error {
+	cfg, err := LoadConfig(dotgenDir)
+	if err != nil {
+		return err
+	}
+	delete(cfg.Agents, name)
+	return SaveConfig(dotgenDir, cfg)
+}
+
 func FindDotgenDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
