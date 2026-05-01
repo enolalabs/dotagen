@@ -121,7 +121,8 @@ func CollectSymlinkPaths(projectDir string, agentNames []string, targets []strin
 
 func FindDotagenSymlinks(projectDir string) ([]SymlinkInfo, error) {
 	var links []SymlinkInfo
-	dotgenDir := filepath.Join(projectDir, ".dotagen")
+	home, _ := os.UserHomeDir()
+	dotgenDir := filepath.Join(home, ".dotagen")
 
 	platformDirs := map[string]string{
 		".claude/agents":  "claude-code",

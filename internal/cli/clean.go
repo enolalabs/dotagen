@@ -21,7 +21,10 @@ var cleanCmd = &cobra.Command{
 			return err
 		}
 
-		projectDir := filepath.Dir(dotgenDir)
+		projectDir, err := config.GetProjectDir()
+		if err != nil {
+			return err
+		}
 
 		links, err := engine.FindDotagenSymlinks(projectDir)
 		if err != nil {

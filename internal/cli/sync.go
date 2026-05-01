@@ -22,7 +22,10 @@ var syncCmd = &cobra.Command{
 			return err
 		}
 
-		projectDir := filepath.Dir(dotgenDir)
+		projectDir, err := config.GetProjectDir()
+		if err != nil {
+			return err
+		}
 
 		cfg, err := config.LoadConfig(dotgenDir)
 		if err != nil {
@@ -46,7 +49,12 @@ var syncCmd = &cobra.Command{
 				return fmt.Errorf("invalid target %q; valid targets: %v", args[0], config.ValidTargets)
 			}
 		} else {
-			syncTargets = cfg.Targets
+			detected := config.DetectPlatforms(projectDir)
+			if len(detected) > 0 {
+				syncTargets = detected
+			} else {
+				syncTargets = cfg.Targets
+			}
 		}
 
 		filteredCfg := &config.Config{

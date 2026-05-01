@@ -19,11 +19,7 @@ func (s *Server) dotgenDir() (string, error) {
 }
 
 func (s *Server) projectDir() (string, error) {
-	d, err := s.dotgenDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Dir(d), nil
+	return config.GetProjectDir()
 }
 
 func writeJSON(w http.ResponseWriter, status int, v interface{}) {
@@ -278,12 +274,21 @@ func (s *Server) handleSync(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err.Error())
 		return
 	}
-	projectDir := filepath.Dir(dotgenDir)
+	projectDir, err := config.GetProjectDir()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 
 	cfg, err := config.LoadConfig(dotgenDir)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	detected := config.DetectPlatforms(projectDir)
+	if len(detected) > 0 {
+		cfg.Targets = detected
 	}
 
 	agents, err := agent.ParseAgentsDir(filepath.Join(dotgenDir, "agents"))
@@ -311,7 +316,11 @@ func (s *Server) handleSyncTarget(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err.Error())
 		return
 	}
-	projectDir := filepath.Dir(dotgenDir)
+	projectDir, err := config.GetProjectDir()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 
 	cfg, err := config.LoadConfig(dotgenDir)
 	if err != nil {
@@ -358,7 +367,11 @@ func (s *Server) handleClean(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err.Error())
 		return
 	}
-	projectDir := filepath.Dir(dotgenDir)
+	projectDir, err := config.GetProjectDir()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 
 	links, err := engine.FindDotagenSymlinks(projectDir)
 	if err != nil {
@@ -377,12 +390,11 @@ func (s *Server) handleClean(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
-	dotgenDir, err := s.dotgenDir()
+	projectDir, err := config.GetProjectDir()
 	if err != nil {
-		writeError(w, http.StatusNotFound, err.Error())
+		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	projectDir := filepath.Dir(dotgenDir)
 
 	links, err := engine.FindDotagenSymlinks(projectDir)
 	if err != nil {

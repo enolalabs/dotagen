@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"gopkg.in/yaml.v3"
 )
@@ -123,22 +124,34 @@ func AddAgentToConfig(dotgenDir string, name string, targets []string) error {
 }
 
 func FindDotgenDir() (string, error) {
-	cwd, err := os.Getwd()
+	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}
+	return filepath.Join(home, ".dotagen"), nil
+}
 
-	dir := cwd
-	for {
-		candidate := filepath.Join(dir, ".dotagen")
-		info, err := os.Stat(candidate)
-		if err == nil && info.IsDir() {
-			return candidate, nil
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			return "", fmt.Errorf(".dotagen directory not found; run 'dotagen init' first")
-		}
-		dir = parent
+func GetProjectDir() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}
+	return home, nil
+}
+
+func DetectPlatforms(homeDir string) []string {
+	var detected []string
+	checks := map[string]string{
+		".claude/agents":  "claude-code",
+		".cursor/rules":   "cursor",
+		".gemini/agents":  "gemini-cli",
+		".opencode/agents": "opencode",
+	}
+	for dir, platform := range checks {
+		if _, err := os.Stat(filepath.Join(homeDir, dir)); err == nil {
+			detected = append(detected, platform)
+		}
+	}
+	sort.Strings(detected)
+	return detected
 }

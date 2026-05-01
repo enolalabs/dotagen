@@ -81,7 +81,7 @@ Examples:
 			return fmt.Errorf("failed to update config: %w", err)
 		}
 
-		relPath, _ := filepath.Rel(filepath.Dir(dotgenDir), agentPath)
+		relPath, _ := filepath.Rel(dotgenDir, agentPath)
 		fmt.Printf("✓ Created agent %q\n", name)
 		fmt.Printf("  File: %s\n", relPath)
 		if len(targets) == 1 && targets[0] == "all" {

@@ -22,7 +22,10 @@ var statusCmd = &cobra.Command{
 			return err
 		}
 
-		projectDir := filepath.Dir(dotgenDir)
+		projectDir, err := config.GetProjectDir()
+		if err != nil {
+			return err
+		}
 
 		cfg, err := config.LoadConfig(dotgenDir)
 		if err != nil {
