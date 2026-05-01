@@ -4,3 +4,4 @@ dist/
 *.exe
 .opencode/node_modules/
 .dotagen/
+.idea/

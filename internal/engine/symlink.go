@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/enolalabs/dotagen/v2/internal/config"
 )
 
 func CreateSymlink(src, dst string) error {
@@ -99,7 +101,9 @@ func RemoveGeneratedContents(dotgenDir string) error {
 	return nil
 }
 
-func FindAllSymlinkPaths(projectDir string, dotgenDir string, agentNames []string, cfgTargets []string, registry interface{ Get(string) (interface{ SymlinkPath(string) string }, error) }) []string {
+func FindAllSymlinkPaths(projectDir string, dotgenDir string, agentNames []string, cfgTargets []string, registry interface {
+	Get(string) (interface{ SymlinkPath(string) string }, error)
+}) []string {
 	return nil
 }
 
@@ -125,10 +129,10 @@ func FindDotagenSymlinks(projectDir string) ([]SymlinkInfo, error) {
 	dotgenDir := filepath.Join(home, ".dotagen")
 
 	platformDirs := map[string]string{
-		".claude/agents":  "claude-code",
-		".cursor/rules":   "cursor",
-		".gemini/agents":  "gemini-cli",
-		".opencode/agents": "opencode",
+		config.CLAUDE_CODE_ROOT_PATH: "claude-code",
+		config.CURSOR_ROOT_PATH:      "cursor",
+		config.GEMINI_CLI_ROOT_PATH:  "gemini-cli",
+		config.OPEN_CODE_ROOT_PATH:   "opencode",
 	}
 
 	for dir, platform := range platformDirs {
