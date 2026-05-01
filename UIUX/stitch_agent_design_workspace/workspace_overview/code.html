@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Agent Designer - Workspace Overview</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container": "#eceef0",
+                    "primary-container": "#3e4fb2",
+                    "surface-dim": "#d8dadc",
+                    "error-container": "#ffdad6",
+                    "primary-fixed": "#dee0ff",
+                    "primary-fixed-dim": "#bbc3ff",
+                    "tertiary": "#693200",
+                    "secondary-container": "#d0e1fb",
+                    "on-surface": "#191c1e",
+                    "on-background": "#191c1e",
+                    "surface-container-high": "#e6e8ea",
+                    "on-tertiary": "#ffffff",
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "surface-container-highest": "#e0e3e5",
+                    "surface-tint": "#4455b8",
+                    "secondary-fixed": "#d3e4fe",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-fixed-variant": "#713700",
+                    "on-primary": "#ffffff",
+                    "secondary": "#505f76",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "on-secondary-container": "#54647a",
+                    "surface-variant": "#e0e3e5",
+                    "on-surface-variant": "#454652",
+                    "error": "#ba1a1a",
+                    "outline-variant": "#c6c5d4",
+                    "on-primary-fixed": "#000f5d",
+                    "primary": "#243699",
+                    "tertiary-fixed-dim": "#ffb785",
+                    "on-tertiary-fixed": "#301400",
+                    "on-error-container": "#93000a",
+                    "inverse-surface": "#2d3133",
+                    "surface": "#f7f9fb",
+                    "outline": "#757684",
+                    "tertiary-container": "#8c4500",
+                    "surface-bright": "#f7f9fb",
+                    "on-secondary-fixed": "#0b1c30",
+                    "background": "#f7f9fb",
+                    "on-error": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "on-primary-fixed-variant": "#2a3c9f",
+                    "inverse-primary": "#bbc3ff",
+                    "on-primary-container": "#c6ccff",
+                    "surface-container-low": "#f2f4f6",
+                    "tertiary-fixed": "#ffdcc6",
+                    "on-tertiary-container": "#ffc39b",
+                    "inverse-on-surface": "#eff1f3"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "inline-gap": "12px",
+                    "unit": "4px",
+                    "stack-gap": "16px",
+                    "container-padding": "24px",
+                    "section-margin": "40px"
+            },
+            "fontFamily": {
+                    "h2": ["Inter"],
+                    "display": ["Inter"],
+                    "label-caps": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "body-base": ["Inter"],
+                    "h1": ["Inter"]
+            },
+            "fontSize": {
+                    "h2": ["20px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                    "display": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "label-caps": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "body-base": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "h1": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-base antialiased min-h-screen flex overflow-hidden">
+<!-- SideNavBar (Shared Component) -->
+<nav class="hidden md:flex bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl docked left-0 h-screen w-64 border-r border-slate-200/50 dark:border-slate-800/50 flat no-shadow flex-col py-4 gap-2 shrink-0">
+<!-- Header -->
+<div class="px-6 mb-4 flex items-center gap-3">
+<img alt="Workspace Icon" class="w-10 h-10 rounded-lg object-cover shadow-sm" data-alt="A minimalist, abstract 3D geometric icon representing a digital workspace or AI agent hub. The design features interlocking translucent cubes made of frosted glass and brushed aluminum, sitting on a pure white surface. Soft, directional studio lighting casts delicate, ambient shadows, enhancing the clean, high-tech corporate aesthetic. The color palette is strictly monochrome with a hint of deep blue." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBONvL6ZEq1aTMIyvSs3DMI_OVHz2UhHe2id24aKWMNu-UxpILyEjipG4dFbFlDsiAb_tbc5zNQWC2hk-70V8pRyGr2l8HC78Vd45pVb10oK7qgb_xssCPkZdkTyl28U2W82NhoX7ZJtExhYvhphXVVKUawDKfEwQzi2KzsIsg-isAj7j1_5v--CI0BdLB9nUz7Yyh4aZLPKUrXAt_VdYDodVjOziIVc0CcAnjX2mkrRUdVwJ8hSumXl-kN-puCM4rC54HzipWJAzo"/>
+<div class="flex flex-col">
+<span class="font-h2 text-h2 text-on-surface">Main Workspace</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Enterprise Tier</span>
+</div>
+</div>
+<!-- CTA -->
+<div class="px-4 mb-4">
+<button class="w-full bg-indigo-600 text-white font-label-caps text-label-caps py-2.5 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                New Agent
+            </button>
+</div>
+<!-- Main Navigation Tabs -->
+<div class="flex flex-col flex-1 gap-1 px-3 text-xs font-medium uppercase tracking-wider">
+<!-- Active Tab: Overview -->
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/20 border-r-4 border-indigo-600 ease-in-out duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+                Overview
+            </a>
+<!-- Inactive Tabs -->
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-indigo-600 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all ease-in-out duration-200" href="#">
+<span class="material-symbols-outlined">smart_toy</span>
+                Agent Library
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-indigo-600 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all ease-in-out duration-200" href="#">
+<span class="material-symbols-outlined">precision_manufacturing</span>
+                Studio
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-indigo-600 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all ease-in-out duration-200" href="#">
+<span class="material-symbols-outlined">lan</span>
+                Deployment
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-indigo-600 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all ease-in-out duration-200" href="#">
+<span class="material-symbols-outlined">health_and_safety</span>
+                Diagnostics
+            </a>
+</div>
+<!-- Footer Tabs -->
+<div class="flex flex-col gap-1 px-3 mt-auto text-xs font-medium uppercase tracking-wider pb-4">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-indigo-600 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all ease-in-out duration-200" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+                Docs
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-indigo-600 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all ease-in-out duration-200" href="#">
+<span class="material-symbols-outlined">contact_support</span>
+                Support
+            </a>
+</div>
+</nav>
+<!-- Main Workspace Area -->
+<div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+<!-- TopNavBar (Shared Component) -->
+<header class="bg-white/70 dark:bg-slate-900/70 backdrop-blur-md font-sans text-sm tracking-tight flex justify-between items-center w-full px-6 h-16 docked full-width top-0 z-40 border-b border-slate-200/50 dark:border-slate-800/50 shadow-sm shrink-0">
+<!-- Left: Search -->
+<div class="flex items-center gap-4 flex-1">
+<div class="text-lg font-bold text-slate-900 dark:text-white md:hidden mr-2">Agent Designer</div>
+<div class="relative max-w-md w-full hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
+<input class="w-full pl-10 pr-4 py-1.5 bg-slate-100 dark:bg-slate-800 border-none rounded-full text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-600 focus:bg-white transition-all outline-none" placeholder="Search agents, tasks..." type="text"/>
+</div>
+</div>
+<!-- Center: Brand (Desktop) -->
+<div class="hidden md:flex justify-center flex-1">
+<div class="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Agent Designer</div>
+</div>
+<!-- Right: Actions & Profile -->
+<div class="flex items-center justify-end gap-2 flex-1">
+<button class="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors rounded-full cursor-pointer active:opacity-80 flex items-center justify-center">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors rounded-full cursor-pointer active:opacity-80 flex items-center justify-center hidden sm:flex">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors rounded-full cursor-pointer active:opacity-80 flex items-center justify-center hidden sm:flex">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-2 hidden sm:block"></div>
+<img alt="User profile" class="w-8 h-8 rounded-full border border-slate-200 object-cover cursor-pointer active:opacity-80" data-alt="A highly detailed, professional headshot of a corporate executive in a modern, brightly lit office environment. The lighting is soft and cinematic, emphasizing a clean, modern aesthetic. The color palette is composed of cool grays, pristine whites, and subtle indigo accents to match a premium enterprise software interface. The mood is confident and authoritative." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_P3TrQLN8Sb0w7-PB1YCpg_h3-rbU3fHcJdt4WNJkyMfmzRbYX0HigqqpQzMfzONI_qL8uO0UUf0ZUI2f4yJBcMkuY9g3jh0DAmKpsSrPh8pt1th-NZYnaLIDIBklqYOjotmmjPHkJ3SY5HQMIhv5SJnl5O6sFIpShurMupRcZktq7tqf5SO7yTjyb_LDotoH4Z5fmbMjDwWaXLwGL-KE59bdpmakigu58-u3OdvgOk4qyNqgL65vdgFyNFlywL_9Bx-PkDDIr6k"/>
+</div>
+</header>
+<!-- Canvas Area -->
+<main class="flex-1 overflow-y-auto p-container-padding flex flex-col gap-section-margin bg-background">
+<!-- Page Header -->
+<div class="flex flex-col gap-unit">
+<h1 class="font-display text-display text-on-surface">Workspace Overview</h1>
+<p class="font-body-base text-body-base text-on-surface-variant">Monitor your agent fleet and recent orchestration activity.</p>
+</div>
+<!-- Bento Grid: Quick Stats -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-stack-gap">
+<!-- Stat Card: Total Agents -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-container-padding flex flex-col gap-stack-gap shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-shadow">
+<div class="flex justify-between items-start w-full">
+<div class="w-10 h-10 rounded-lg bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined">smart_toy</span>
+</div>
+<span class="font-label-caps text-label-caps text-primary bg-primary-fixed/50 px-2 py-1 rounded-full">+12% this week</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-on-surface-variant mb-1">Total Agents Active</span>
+<span class="font-display text-display text-on-surface">24</span>
+</div>
+</div>
+<!-- Stat Card: Errored Agents (Critical) -->
+<div class="bg-surface-container-lowest border border-error/30 rounded-xl p-container-padding flex flex-col gap-stack-gap shadow-[0_4px_20px_rgb(0,0,0,0.03)] relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-error-container/40 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+<div class="flex justify-between items-start w-full relative z-10">
+<div class="w-10 h-10 rounded-lg bg-error-container flex items-center justify-center text-on-error-container">
+<span class="material-symbols-outlined">warning</span>
+</div>
+<button class="font-label-caps text-label-caps text-error hover:underline flex items-center gap-1">
+                            Review Logs <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</button>
+</div>
+<div class="flex flex-col relative z-10">
+<span class="font-body-sm text-body-sm text-on-surface-variant mb-1">Needs Attention</span>
+<span class="font-display text-display text-error">3</span>
+</div>
+</div>
+<!-- Stat Card: Generated Files -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-container-padding flex flex-col gap-stack-gap shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-shadow">
+<div class="flex justify-between items-start w-full">
+<div class="w-10 h-10 rounded-lg bg-secondary-fixed flex items-center justify-center text-on-secondary-fixed">
+<span class="material-symbols-outlined">description</span>
+</div>
+</div>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-on-surface-variant mb-1">Files Generated (24h)</span>
+<span class="font-display text-display text-on-surface">1,492</span>
+</div>
+</div>
+</section>
+<!-- Activity & Chart Section -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-stack-gap flex-1 min-h-[400px]">
+<!-- Chart Area (Spans 2 cols) -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-container-padding flex flex-col lg:col-span-2 shadow-[0_4px_20px_rgb(0,0,0,0.02)]">
+<div class="flex justify-between items-center mb-section-margin">
+<h2 class="font-h2 text-h2 text-on-surface">Orchestration Volume</h2>
+<select class="bg-surface text-on-surface-variant border border-outline-variant/50 rounded-lg px-3 py-1.5 font-body-sm text-body-sm outline-none focus:border-primary">
+<option>Last 7 Days</option>
+<option>Last 30 Days</option>
+</select>
+</div>
+<!-- CSS Mock Bar Chart -->
+<div class="flex-1 flex items-end justify-between gap-2 pt-4 relative border-b border-outline-variant/30 pb-2">
+<!-- Y-axis guides (visual only) -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none pb-2">
+<div class="w-full h-px bg-outline-variant/10"></div>
+<div class="w-full h-px bg-outline-variant/10"></div>
+<div class="w-full h-px bg-outline-variant/10"></div>
+<div class="w-full h-px bg-outline-variant/10"></div>
+</div>
+<!-- Bars -->
+<div class="w-full bg-primary-fixed-dim/40 rounded-t-sm hover:bg-primary transition-colors relative group h-[40%]"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-label-caps text-[10px] px-2 py-1 rounded hidden group-hover:block whitespace-nowrap">120 tasks</div></div>
+<div class="w-full bg-primary-fixed-dim/40 rounded-t-sm hover:bg-primary transition-colors relative group h-[60%]"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-label-caps text-[10px] px-2 py-1 rounded hidden group-hover:block whitespace-nowrap">180 tasks</div></div>
+<div class="w-full bg-primary-fixed-dim/40 rounded-t-sm hover:bg-primary transition-colors relative group h-[30%]"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-label-caps text-[10px] px-2 py-1 rounded hidden group-hover:block whitespace-nowrap">90 tasks</div></div>
+<div class="w-full bg-primary-container rounded-t-sm relative group h-[85%]"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-label-caps text-[10px] px-2 py-1 rounded hidden group-hover:block whitespace-nowrap">255 tasks</div></div>
+<div class="w-full bg-primary-fixed-dim/40 rounded-t-sm hover:bg-primary transition-colors relative group h-[50%]"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-label-caps text-[10px] px-2 py-1 rounded hidden group-hover:block whitespace-nowrap">150 tasks</div></div>
+<div class="w-full bg-primary-fixed-dim/40 rounded-t-sm hover:bg-primary transition-colors relative group h-[70%]"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-label-caps text-[10px] px-2 py-1 rounded hidden group-hover:block whitespace-nowrap">210 tasks</div></div>
+<div class="w-full bg-primary-fixed-dim/40 rounded-t-sm hover:bg-primary transition-colors relative group h-[95%]"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-label-caps text-[10px] px-2 py-1 rounded hidden group-hover:block whitespace-nowrap">285 tasks</div></div>
+</div>
+<!-- X-axis labels -->
+<div class="flex justify-between mt-2 font-label-caps text-[11px] text-on-surface-variant uppercase tracking-wider">
+<span>Mon</span><span>Tue</span><span>Wed</span><span class="text-primary font-bold">Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+</div>
+</div>
+<!-- Recent Activity List (Spans 1 col) -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl flex flex-col shadow-[0_4px_20px_rgb(0,0,0,0.02)] overflow-hidden">
+<div class="p-container-padding pb-4 border-b border-outline-variant/20 flex justify-between items-center">
+<h2 class="font-h2 text-h2 text-on-surface">Recent Activity</h2>
+<button class="font-label-caps text-label-caps text-primary hover:underline">View All</button>
+</div>
+<div class="flex flex-col flex-1 overflow-y-auto">
+<!-- Activity Item 1 -->
+<div class="p-stack-gap border-b border-outline-variant/10 flex gap-inline-gap items-start hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[16px]">edit_note</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Prompt Matrix Updated</span>
+<span class="font-body-sm text-[13px] text-on-surface-variant mt-0.5 line-clamp-1">Adjusted system instructions for 'Data Extractor' agent.</span>
+<span class="font-label-caps text-[10px] text-outline mt-1.5">12 mins ago</span>
+</div>
+</div>
+<!-- Activity Item 2 -->
+<div class="p-stack-gap border-b border-outline-variant/10 flex gap-inline-gap items-start hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="w-8 h-8 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[16px]">sync</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Knowledge Base Sync</span>
+<span class="font-body-sm text-[13px] text-on-surface-variant mt-0.5 line-clamp-1">Successfully embedded 142 new CRM documents.</span>
+<span class="font-label-caps text-[10px] text-outline mt-1.5">1 hour ago</span>
+</div>
+</div>
+<!-- Activity Item 3 -->
+<div class="p-stack-gap border-b border-outline-variant/10 flex gap-inline-gap items-start hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="w-8 h-8 rounded-full bg-error-container text-on-error-container flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[16px]">error</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-on-surface font-medium">API Rate Limit Hit</span>
+<span class="font-body-sm text-[13px] text-on-surface-variant mt-0.5 line-clamp-1">Agent 'SupportBot_V2' suspended temporarily.</span>
+<span class="font-label-caps text-[10px] text-outline mt-1.5">3 hours ago</span>
+</div>
+</div>
+<!-- Activity Item 4 -->
+<div class="p-stack-gap flex gap-inline-gap items-start hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest text-on-surface flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Deployment Started</span>
+<span class="font-body-sm text-[13px] text-on-surface-variant mt-0.5 line-clamp-1">Version 1.4 pushed to staging environment.</span>
+<span class="font-label-caps text-[10px] text-outline mt-1.5">Yesterday</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body></html>

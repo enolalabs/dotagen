@@ -133,16 +133,27 @@ func (s *Server) handleListAgents(w http.ResponseWriter, r *http.Request) {
 		Name        string            `json:"name"`
 		Description string            `json:"description,omitempty"`
 		Category    string            `json:"category,omitempty"`
+		Categories  []string          `json:"categories,omitempty"`
 		Frontmatter map[string]string `json:"frontmatter,omitempty"`
 	}
 	var summaries []agentSummary
 	for _, a := range agents {
 		desc := a.Frontmatter["description"]
 		cat := a.Frontmatter["category"]
+		var cats []string
+		if cat != "" {
+			for _, c := range strings.Split(cat, ",") {
+				c = strings.TrimSpace(c)
+				if c != "" {
+					cats = append(cats, c)
+				}
+			}
+		}
 		summaries = append(summaries, agentSummary{
 			Name:        a.Name,
 			Description: desc,
 			Category:    cat,
+			Categories:  cats,
 			Frontmatter: a.Frontmatter,
 		})
 	}

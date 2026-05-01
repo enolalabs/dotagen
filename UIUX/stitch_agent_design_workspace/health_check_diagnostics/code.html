@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>System Health &amp; Diagnostics</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container": "#eceef0",
+                        "primary-container": "#3e4fb2",
+                        "surface-dim": "#d8dadc",
+                        "error-container": "#ffdad6",
+                        "primary-fixed": "#dee0ff",
+                        "primary-fixed-dim": "#bbc3ff",
+                        "tertiary": "#693200",
+                        "secondary-container": "#d0e1fb",
+                        "on-surface": "#191c1e",
+                        "on-background": "#191c1e",
+                        "surface-container-high": "#e6e8ea",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "surface-container-highest": "#e0e3e5",
+                        "surface-tint": "#4455b8",
+                        "secondary-fixed": "#d3e4fe",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed-variant": "#713700",
+                        "on-primary": "#ffffff",
+                        "secondary": "#505f76",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "on-secondary-container": "#54647a",
+                        "surface-variant": "#e0e3e5",
+                        "on-surface-variant": "#454652",
+                        "error": "#ba1a1a",
+                        "outline-variant": "#c6c5d4",
+                        "on-primary-fixed": "#000f5d",
+                        "primary": "#243699",
+                        "tertiary-fixed-dim": "#ffb785",
+                        "on-tertiary-fixed": "#301400",
+                        "on-error-container": "#93000a",
+                        "inverse-surface": "#2d3133",
+                        "surface": "#f7f9fb",
+                        "outline": "#757684",
+                        "tertiary-container": "#8c4500",
+                        "surface-bright": "#f7f9fb",
+                        "on-secondary-fixed": "#0b1c30",
+                        "background": "#f7f9fb",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed-variant": "#2a3c9f",
+                        "inverse-primary": "#bbc3ff",
+                        "on-primary-container": "#c6ccff",
+                        "surface-container-low": "#f2f4f6",
+                        "tertiary-fixed": "#ffdcc6",
+                        "on-tertiary-container": "#ffc39b",
+                        "inverse-on-surface": "#eff1f3"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "inline-gap": "12px",
+                        "unit": "4px",
+                        "stack-gap": "16px",
+                        "container-padding": "24px",
+                        "section-margin": "40px"
+                    },
+                    fontFamily: {
+                        "h2": ["Inter"],
+                        "display": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "body-base": ["Inter"],
+                        "h1": ["Inter"]
+                    },
+                    fontSize: {
+                        "h2": ["20px", { lineHeight: "1.4", fontWeight: "500" }],
+                        "display": ["32px", { lineHeight: "1.2", letterSpacing: "-0.02em", fontWeight: "600" }],
+                        "label-caps": ["12px", { lineHeight: "1.2", letterSpacing: "0.05em", fontWeight: "600" }],
+                        "body-sm": ["14px", { lineHeight: "1.5", fontWeight: "400" }],
+                        "body-base": ["16px", { lineHeight: "1.6", fontWeight: "400" }],
+                        "h1": ["24px", { lineHeight: "1.3", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: theme('colors.background'); color: theme('colors.on-background'); }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<nav class="bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl docked left-0 h-screen w-64 border-r border-slate-200/50 dark:border-slate-800/50 flat no-shadow hidden md:flex flex-col py-4 gap-2">
+<div class="px-6 pb-6">
+<div class="flex items-center gap-3">
+<img alt="Workspace Icon" class="w-10 h-10 rounded-lg object-cover" data-alt="A small abstract, geometric workspace icon featuring sharp edges and modern styling, suitable for a corporate software interface logo." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWfsMLPEL_94mcUxAMMvzXY0C_bGpL7Ke2R0O5azYwWDOIoUhsb73UPqz3TCCM8iXwpXDZ-mLBffbvfQQ3EioanI0JeY2dme_I3CpiXo5wwvhkkK_HqdRaX0rKNlOT3LMVpzFH88CgNcAPp_im6LoHv__UBLh0HYsmej7BCLn6XE8FLYJS9XkqM67W2EMOcYcCB7p2J3JaysNW6C8v-nWsEt4JxUHgitUrkjZm1I9KBpTOto91mAb18HKXIq0CalV_c5Iy_rXGmBc"/>
+<div>
+<h2 class="font-h2 text-h2 text-on-surface">Main Workspace</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Enterprise Tier</p>
+</div>
+</div>
+<button class="mt-6 w-full bg-primary text-on-primary py-2 rounded-lg font-body-base text-body-base font-medium flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+                New Agent
+            </button>
+</div>
+<div class="flex-1 px-3 overflow-y-auto space-y-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-indigo-600 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all ease-in-out duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-sm text-body-sm font-medium">Overview</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-indigo-600 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all ease-in-out duration-200" href="#">
+<span class="material-symbols-outlined">smart_toy</span>
+<span class="font-body-sm text-body-sm font-medium">Agent Library</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-indigo-600 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all ease-in-out duration-200" href="#">
+<span class="material-symbols-outlined">precision_manufacturing</span>
+<span class="font-body-sm text-body-sm font-medium">Studio</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-indigo-600 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all ease-in-out duration-200" href="#">
+<span class="material-symbols-outlined">lan</span>
+<span class="font-body-sm text-body-sm font-medium">Deployment</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/20 border-r-4 border-indigo-600 transition-all ease-in-out duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">health_and_safety</span>
+<span class="font-body-sm text-body-sm font-medium">Diagnostics</span>
+</a>
+</div>
+<div class="px-3 mt-auto space-y-1 pt-4 border-t border-slate-200/50">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-indigo-600 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-body-sm text-body-sm">Docs</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-indigo-600 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all" href="#">
+<span class="material-symbols-outlined">contact_support</span>
+<span class="font-body-sm text-body-sm">Support</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-background">
+<!-- TopNavBar -->
+<header class="bg-white/70 dark:bg-slate-900/70 backdrop-blur-md docked full-width top-0 z-40 border-b border-slate-200/50 dark:border-slate-800/50 shadow-sm flex justify-between items-center w-full px-6 h-16 shrink-0">
+<div class="flex items-center gap-4">
+<button class="md:hidden text-on-surface hover:bg-slate-100 p-2 rounded-full">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Agent Designer</span>
+</div>
+<div class="flex-1 max-w-md mx-6 hidden md:block">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-lg font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="Search diagnostics..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="ml-2 pl-4 border-l border-slate-200">
+<img alt="User profile" class="w-8 h-8 rounded-full border border-outline-variant" data-alt="A professional headshot of a person looking forward, brightly lit with a neutral background, suitable for a corporate dashboard profile image." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPIMX_IWrA7eY6337C0ReY-2X4jmGJsOP5swjvA7tJ0rMigSduQ8sDNKh5j0V3OgTzHZs2Dtb-7LitPOnNs5eDvTQ70vS9-xVjYMTnIL0P35tnRgU5EelYR4bzcCI5sT_U-XeAoT2pugrcWU5oFGXO1uxYQPOhZVPdV1OmeEJbe6ymdDMUIoi1dwgH3vo6WOMNBDMnak-FPGx_345JzvVG1boqG_hiKPZw9hxNs-nwxvjF4OC3aRRcVtEUhaDySc09XNZH_1ASU5s"/>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<div class="flex-1 overflow-y-auto p-container-padding space-y-section-margin">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h1 class="font-display text-display text-on-surface">System Health &amp; Diagnostics</h1>
+<p class="font-body-base text-body-base text-on-surface-variant mt-2">Monitor system anomalies and resolve agent execution errors.</p>
+</div>
+<!-- Filter Controls -->
+<div class="flex items-center gap-3 bg-surface-container-lowest p-1 rounded-lg border border-outline-variant/50 shadow-sm">
+<button class="px-4 py-1.5 rounded-md font-body-sm text-body-sm font-medium bg-surface-container text-on-surface">All Issues</button>
+<button class="px-4 py-1.5 rounded-md font-body-sm text-body-sm font-medium text-on-surface-variant hover:bg-surface-container-low transition-colors flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+                        Critical
+                    </button>
+<button class="px-4 py-1.5 rounded-md font-body-sm text-body-sm font-medium text-on-surface-variant hover:bg-surface-container-low transition-colors flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim"></span>
+                        Warnings
+                    </button>
+</div>
+</div>
+<!-- Issues Grid -->
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-stack-gap">
+<!-- Critical Issue Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl border border-error/20 p-5 shadow-sm relative overflow-hidden group">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-error"></div>
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-error-container text-on-error-container flex items-center justify-center">
+<span class="material-symbols-outlined">smart_toy</span>
+</div>
+<div>
+<h3 class="font-h2 text-h2 text-on-surface flex items-center gap-2">
+                                    Data Scraper Agent
+                                    <span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-caps text-[10px]">CRITICAL</span>
+</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">ID: AGT-8892-XT</p>
+</div>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">2 mins ago</span>
+</div>
+<div class="bg-surface-container-low rounded-lg p-3 mb-4 border border-outline-variant/30">
+<p class="font-body-base text-body-base text-on-surface">Connection timeout while attempting to reach primary database endpoint. Sync failed after 3 retries.</p>
+<div class="mt-2 font-mono text-xs text-error bg-error-container/30 p-2 rounded">
+                            Error: ETIMEDOUT 192.168.1.104:5432
+                        </div>
+</div>
+<div class="flex items-center justify-end gap-3 mt-4">
+<button class="px-4 py-2 rounded-lg font-body-sm text-body-sm font-medium text-secondary hover:bg-surface-container transition-colors">Dismiss</button>
+<button class="px-4 py-2 rounded-lg font-body-sm text-body-sm font-medium bg-surface text-on-surface border border-outline-variant hover:bg-surface-container transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">sync</span>
+                            Retry Sync
+                        </button>
+<button class="px-4 py-2 rounded-lg font-body-sm text-body-sm font-medium bg-error text-on-error hover:opacity-90 transition-opacity flex items-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-[18px]">build</span>
+                            Fix in Studio
+                        </button>
+</div>
+</div>
+<!-- Critical Issue Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl border border-error/20 p-5 shadow-sm relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-error"></div>
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-error-container text-on-error-container flex items-center justify-center">
+<span class="material-symbols-outlined">description</span>
+</div>
+<div>
+<h3 class="font-h2 text-h2 text-on-surface flex items-center gap-2">
+                                    auth_config.yaml
+                                    <span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-caps text-[10px]">CRITICAL</span>
+</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Path: /config/auth/</p>
+</div>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">15 mins ago</span>
+</div>
+<div class="bg-surface-container-low rounded-lg p-3 mb-4 border border-outline-variant/30">
+<p class="font-body-base text-body-base text-on-surface">Syntax error detected during configuration validation. Missing required field 'client_secret'.</p>
+<div class="mt-2 font-mono text-xs text-error bg-error-container/30 p-2 rounded">
+                            YAMLValidationError: Missing required property at line 42
+                        </div>
+</div>
+<div class="flex items-center justify-end gap-3 mt-4">
+<button class="px-4 py-2 rounded-lg font-body-sm text-body-sm font-medium text-secondary hover:bg-surface-container transition-colors">Ignore</button>
+<button class="px-4 py-2 rounded-lg font-body-sm text-body-sm font-medium bg-error text-on-error hover:opacity-90 transition-opacity flex items-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+                            Edit File
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

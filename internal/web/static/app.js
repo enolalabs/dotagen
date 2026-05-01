@@ -1,34 +1,62 @@
-const API = '';
-let allAgents = [];
-let selectedCategory = 'all';
+/* ═══════════════════════════════════════════════
+   dotagen dashboard — app.js
+   ═══════════════════════════════════════════════ */
+
+// ── State ──
+let agents = [];
+let config = { targets: [], agents: {} };
+let knownTargets = [];
+let statusLinks = [];
+let currentTab = 'agents';
 let searchQuery = '';
-let selectedAgent = null;
-let currentPage = 'dashboard';
-let lastFocusedElement = null;
+let categoryFilter = 'all';
+let statusFilter = 'all';
+let panelMode = null; // null | 'view' | 'create' | 'edit'
+let panelAgent = null;
+let selectedAgents = new Set();
 
-const CATEGORIES = {
-    'core-dev': 'Core Development',
-    'languages': 'Language Specialists',
-    'infrastructure': 'Infrastructure',
-    'quality-security': 'Quality & Security',
-    'data-ai': 'Data & AI',
-    'devex': 'Developer Experience',
-    'specialized': 'Specialized Domains',
-    'business': 'Business & Product',
-    'orchestration': 'Meta-Orchestration',
-    'research': 'Research & Analysis',
+const PLATFORM_LABELS = {
+    'claude-code': 'Claude',
+    'cursor': 'Cursor',
+    'gemini-cli': 'Gemini',
+    'opencode': 'OpenCode',
 };
 
-const PAGE_TITLES = {
-    dashboard: 'Dashboard',
-    agents: 'Agents',
-    targets: 'Targets',
-    preview: 'Preview',
-    status: 'Status',
+const PLATFORM_NAMES = {
+    'claude-code': 'Claude Code',
+    'cursor': 'Cursor',
+    'gemini-cli': 'Gemini CLI',
+    'opencode': 'OpenCode',
 };
 
+// Category labels — built dynamically from agents
+function catLabel(cat) {
+    const labels = {
+        'core-development': 'Core Dev',
+        'language-specialists': 'Languages',
+        'infrastructure': 'Infra',
+        'quality-security': 'Quality',
+        'data-ai': 'Data & AI',
+        'developer-experience': 'DevEx',
+        'specialized-domains': 'Specialized',
+        'business-product': 'Business',
+        'meta-orchestration': 'Orchestration',
+        'research-analysis': 'Research',
+    };
+    return labels[cat] || cat || '—';
+}
+function agentCategories(a) {
+    return (a.categories && a.categories.length) ? a.categories : (a.category ? a.category.split(',').map(c => c.trim()).filter(Boolean) : []);
+}
+function allCategories() {
+    const s = new Set();
+    agents.forEach(a => agentCategories(a).forEach(c => s.add(c)));
+    return [...s].sort();
+}
+
+// ── API ──
 async function api(path, opts = {}) {
-    const res = await fetch(API + path, {
+    const res = await fetch(path, {
         headers: { 'Content-Type': 'application/json' },
         ...opts,
     });
@@ -39,867 +67,828 @@ async function api(path, opts = {}) {
     return res.json();
 }
 
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+// ── Utils ──
+function esc(s) {
+    if (!s) return '';
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
 }
 
-function showLoading(containerId) {
-    const el = document.getElementById(containerId);
-    if (el) el.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div><p>Loading...</p></div>';
+function truncate(s, n = 120) {
+    if (!s) return '';
+    return s.length <= n ? s : s.slice(0, n - 1).trimEnd() + '…';
 }
 
-function showError(containerId, message) {
-    const el = document.getElementById(containerId);
-    if (el) el.innerHTML = `<div class="empty-state"><div class="empty-icon">&#9888;</div><h3>Error</h3><p>${escapeHtml(message)}</p></div>`;
+// catLabel defined above with CATEGORIES
+
+function resolveTargets(entry, platforms) {
+    if (!entry || entry.disabled) return [];
+    const t = entry.targets || [];
+    if (t.length === 1 && t[0] === 'all') return [...platforms];
+    return t;
 }
 
-function renderMarkdown(text) {
-    if (!text) return '';
-    let html = escapeHtml(text);
-
-    html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
-        return `<pre><code class="lang-${lang}">${code.trim()}</code></pre>`;
-    });
-
-    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-    html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
-    html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-    html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-    html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-
-    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-
-    html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
-
-    html = html.replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>');
-
-    html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, (match) => {
-        return '<ul>' + match + '</ul>';
-    });
-
-    html = html.replace(/\n{2,}/g, '</p><p>');
-    html = '<p>' + html + '</p>';
-
-    html = html.replace(/<p>\s*<(h[1-4]|pre|ul|ol)/g, '<$1');
-    html = html.replace(/<\/(h[1-4]|pre|ul|ol)>\s*<\/p>/g, '</$1>');
-    html = html.replace(/<p>\s*<\/p>/g, '');
-
-    return html;
-}
-
-function showSnackbar(message, duration = 4000) {
+function showSnackbar(msg, ms = 3000) {
     const el = document.getElementById('snackbar');
-    el.textContent = message;
+    el.textContent = msg;
     el.classList.add('show');
-    setTimeout(() => el.classList.remove('show'), duration);
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => el.classList.remove('show'), ms);
 }
 
-function toggleNav() {
-    document.getElementById('app').classList.toggle('nav-open');
+// ── Theme ──
+function toggleTheme() {
+    const html = document.documentElement;
+    const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('dotagen-theme', next);
 }
 
-function navigateTo(page) {
-    currentPage = page;
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    const navItem = document.querySelector(`.nav-item[data-page="${page}"]`);
-    if (navItem) navItem.classList.add('active');
-
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById('page-' + page).classList.add('active');
-
-    document.getElementById('topbar-title').textContent = PAGE_TITLES[page] || page;
-    document.getElementById('app').classList.remove('nav-open');
-
-    document.getElementById('main-content').scrollTop = 0;
-
-    loadPage(page);
+function initTheme() {
+    const saved = localStorage.getItem('dotagen-theme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
 }
 
-document.querySelectorAll('.nav-item').forEach(link => {
-    link.addEventListener('click', e => {
-        e.preventDefault();
-        navigateTo(link.dataset.page);
+// ── Tab navigation ──
+function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach(t => {
+        const active = t.dataset.tab === tab;
+        t.classList.toggle('active', active);
+        t.setAttribute('aria-selected', active);
     });
+    document.querySelectorAll('.tab-panel').forEach(p => {
+        p.classList.toggle('active', p.id === 'tab-' + tab);
+    });
+    if (tab === 'agents') loadAgents();
+    else if (tab === 'preview') loadPreviewOptions();
+    else if (tab === 'status') loadStatus();
+}
+
+document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => switchTab(t.dataset.tab));
 });
 
-function loadPage(page) {
-    switch (page) {
-        case 'dashboard': loadDashboard(); break;
-        case 'agents': loadAgents(); break;
-        case 'targets': loadTargets(); break;
-        case 'preview': loadPreviewOptions(); break;
-        case 'status': loadStatus(); break;
-    }
-}
-
-async function loadDashboard() {
-    showLoading('dashboard-stats');
+// ── Data loading ──
+async function loadAll() {
     try {
-        const [agents, config, status] = await Promise.all([
+        const [a, c, t, s] = await Promise.all([
             api('/api/agents'),
             api('/api/config'),
+            api('/api/targets'),
             api('/api/status'),
         ]);
-        allAgents = agents || [];
-
-        if (allAgents.length === 0) {
-            document.getElementById('dashboard-stats').innerHTML = '';
-            document.getElementById('dashboard-actions').innerHTML = `
-                <div class="empty-state" style="width:100%">
-                    <div class="empty-icon">&#128640;</div>
-                    <h3>No agents yet</h3>
-                    <p>Create your first agent or run <code>dotagen init</code> to get started with built-in agents.</p>
-                    <button class="m3-btn m3-btn-filled" onclick="navigateTo('agents')" style="margin-top:16px">Create Agent</button>
-                </div>`;
-            return;
-        }
-
-        document.getElementById('dashboard-stats').innerHTML = `
-            <div class="stat-card">
-                <div class="stat-value" id="stat-agents">-</div>
-                <div class="stat-label">Total Agents</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="stat-targets">-</div>
-                <div class="stat-label">Targets</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="stat-synced">-</div>
-                <div class="stat-label">Synced</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="stat-categories">-</div>
-                <div class="stat-label">Categories</div>
-            </div>`;
-        document.getElementById('dashboard-actions').innerHTML = `
-            <button class="m3-btn m3-btn-filled" onclick="triggerSync()">Sync All</button>
-            <button class="m3-btn m3-btn-outlined" onclick="triggerClean()">Clean All</button>
-            <button class="m3-btn m3-btn-tonal" onclick="navigateTo('agents')">Manage Agents</button>`;
-
-        document.getElementById('stat-agents').textContent = allAgents.length;
-        document.getElementById('stat-targets').textContent = (config.targets || []).length;
-        document.getElementById('stat-synced').textContent = (status.symlinks || []).filter(s => !s.broken).length;
-
-        const cats = new Set(allAgents.map(a => a.category).filter(Boolean));
-        document.getElementById('stat-categories').textContent = cats.size;
+        agents = a || [];
+        config = c || { targets: [], agents: {} };
+        knownTargets = (t && t.targets) || config.targets || [];
+        statusLinks = (s && s.symlinks) || [];
+        updateBadges();
     } catch (e) {
-        showError('dashboard-stats', e.message);
+        showSnackbar('Failed to load data: ' + e.message, 5000);
     }
 }
 
-async function loadAgents() {
-    showLoading('agents-grid');
-    try {
-        const agents = await api('/api/agents');
-        allAgents = agents || [];
-        renderCategoryChips();
-        renderAgentsGrid();
-    } catch (e) {
-        showError('agents-grid', e.message);
+function updateBadges() {
+    document.getElementById('badge-agents').textContent = agents.length;
+    const broken = statusLinks.filter(l => l.broken).length;
+    const badge = document.getElementById('badge-status');
+    if (broken > 0) {
+        badge.textContent = broken;
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
     }
+}
+
+// ═══════════════════════════════════
+// AGENTS TAB
+// ═══════════════════════════════════
+async function loadAgents() {
+    await loadAll();
+    renderCategoryChips();
+    renderAgentsTable();
+    renderPlatformHeaders();
+}
+
+function renderPlatformHeaders() {
+    const th = document.getElementById('platforms-header');
+    if (knownTargets.length === 0) {
+        th.textContent = 'Platforms';
+        return;
+    }
+    th.innerHTML = knownTargets.map(t =>
+        `<span title="${esc(PLATFORM_NAMES[t] || t)}" style="display:inline-block;padding:0 4px;font-size:11px">${esc(PLATFORM_LABELS[t] || t)}</span>`
+    ).join('');
 }
 
 function renderCategoryChips() {
-    const container = document.getElementById('category-chips');
-    const catCounts = {};
-    allAgents.forEach(a => {
-        const c = a.category || 'uncategorized';
-        catCounts[c] = (catCounts[c] || 0) + 1;
+    const counts = {};
+    agents.forEach(a => {
+        const cats = agentCategories(a);
+        if (cats.length === 0) counts['uncategorized'] = (counts['uncategorized'] || 0) + 1;
+        else cats.forEach(c => counts[c] = (counts[c] || 0) + 1);
     });
 
-    let html = `<button class="chip ${selectedCategory === 'all' ? 'selected' : ''}" onclick="filterCategory('all')">
-        <span class="chip-check">&#10003;</span> All (${allAgents.length})
-    </button>`;
-
-    const sortedCats = Object.entries(catCounts).sort((a, b) => b[1] - a[1]);
-    for (const [cat, count] of sortedCats) {
-        const label = CATEGORIES[cat] || cat;
-        html += `<button class="chip ${selectedCategory === cat ? 'selected' : ''}" onclick="filterCategory('${escapeHtml(cat)}')">
-            <span class="chip-check">&#10003;</span> ${escapeHtml(label)} (${count})
-        </button>`;
-    }
-
+    const container = document.getElementById('category-chips');
+    let html = `<button class="chip ${categoryFilter === 'all' ? 'active' : ''}" onclick="setCategory('all')">All</button>`;
+    Object.entries(counts).sort((a, b) => b[1] - a[1]).forEach(([cat, n]) => {
+        html += `<button class="chip ${categoryFilter === cat ? 'active' : ''}" onclick="setCategory('${esc(cat)}')">${esc(catLabel(cat))} <span style='opacity:.5'>${n}</span></button>`;
+    });
     container.innerHTML = html;
 }
 
-function filterCategory(cat) {
-    selectedCategory = cat;
+function setCategory(cat) {
+    categoryFilter = cat;
     renderCategoryChips();
-    renderAgentsGrid();
-}
-
-function handleSearch(query) {
-    searchQuery = query.toLowerCase().trim();
-    if (currentPage === 'agents') {
-        renderAgentsGrid();
-    } else if (searchQuery) {
-        navigateTo('agents');
-    }
+    renderAgentsTable();
 }
 
 function getFilteredAgents() {
-    let filtered = allAgents;
-    if (selectedCategory !== 'all') {
-        filtered = filtered.filter(a => a.category === selectedCategory);
+    let list = agents;
+    if (categoryFilter !== 'all') {
+        list = list.filter(a => {
+            const cats = agentCategories(a);
+            return cats.includes(categoryFilter) || (cats.length === 0 && categoryFilter === 'uncategorized');
+        });
     }
     if (searchQuery) {
-        filtered = filtered.filter(a =>
-            a.name.toLowerCase().includes(searchQuery) ||
-            (a.description || '').toLowerCase().includes(searchQuery) ||
-            (a.category || '').toLowerCase().includes(searchQuery)
+        const q = searchQuery.toLowerCase();
+        list = list.filter(a =>
+            a.name.toLowerCase().includes(q) ||
+            (a.description || '').toLowerCase().includes(q) ||
+            agentCategories(a).some(c => c.toLowerCase().includes(q))
         );
     }
-    return filtered;
+    return list;
 }
 
-function renderAgentsGrid() {
-    const grid = document.getElementById('agents-grid');
+function renderAgentsTable() {
     const filtered = getFilteredAgents();
+    const tbody = document.getElementById('agents-tbody');
+    const empty = document.getElementById('agents-empty');
+    const noResults = document.getElementById('agents-no-results');
+    const tableWrap = document.querySelector('.agents-table-wrap');
+    const countEl = document.getElementById('agent-count');
 
-    document.getElementById('agent-count').textContent = `${filtered.length} of ${allAgents.length}`;
-    document.getElementById('agents-subtitle').textContent = `${allAgents.length} agents across ${new Set(allAgents.map(a => a.category).filter(Boolean)).size} categories`;
+    if (agents.length === 0) {
+        empty.classList.remove('hidden');
+        noResults.classList.add('hidden');
+        tableWrap.classList.add('hidden');
+        countEl.textContent = '';
+        return;
+    }
+
+    empty.classList.add('hidden');
 
     if (filtered.length === 0) {
-        grid.innerHTML = `<div class="empty-state">
-            <div class="empty-icon">&#128269;</div>
-            <h3>No agents found</h3>
-            <p>Try adjusting your search or category filter.</p>
-        </div>`;
+        noResults.classList.remove('hidden');
+        tableWrap.classList.add('hidden');
+        countEl.textContent = '';
         return;
     }
 
-    grid.innerHTML = filtered.map(a => {
-        const catLabel = CATEGORIES[a.category] || a.category || '';
-        const isSelected = selectedAgent && selectedAgent.name === a.name;
-        return `<div class="agent-card ${isSelected ? 'selected' : ''}" tabindex="0" onclick="selectAgent('${escapeHtml(a.name)}')" onkeydown="if(event.key==='Enter')selectAgent('${escapeHtml(a.name)}')">
-            <div class="agent-card-header">
-                <h3>${escapeHtml(a.name)}</h3>
-                ${catLabel ? `<span class="agent-card-category">${escapeHtml(catLabel)}</span>` : ''}
-            </div>
-            <div class="agent-card-desc">${escapeHtml(a.description || 'No description')}</div>
-        </div>`;
+    noResults.classList.add('hidden');
+    tableWrap.classList.remove('hidden');
+    countEl.textContent = `${filtered.length} of ${agents.length}`;
+
+    tbody.innerHTML = filtered.map(a => {
+        const entry = config.agents?.[a.name];
+        const active = resolveTargets(entry, knownTargets);
+        const checked = selectedAgents.has(a.name);
+
+        const dots = knownTargets.map(t => {
+            const on = active.includes(t);
+            const label = PLATFORM_LABELS[t] || t.slice(0, 2).toUpperCase();
+            return `<button class="pdot ${on ? 'pdot-on' : 'pdot-off'}" data-platform="${esc(t)}" title="${on ? 'Disable' : 'Enable'} ${esc(PLATFORM_NAMES[t] || t)}" onclick="event.stopPropagation();togglePlatform('${esc(a.name)}','${esc(t)}',${!on})">${label}</button>`;
+        }).join('');
+
+        const cats = agentCategories(a);
+        const catBadges = cats.length
+            ? cats.map(c => `<span class="agent-cat-badge">${esc(catLabel(c))}</span>`).join(' ')
+            : '<span class="agent-cat-badge">—</span>';
+
+        return `<tr class="${checked ? 'row-selected' : ''}" onclick="viewAgent('${esc(a.name)}')">
+            <td class="col-check" onclick="event.stopPropagation()"><input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleAgentSelect('${esc(a.name)}', this.checked)"></td>
+            <td><span class="agent-name">${esc(a.name)}</span></td>
+            <td title="${esc(a.description || '')}"><span class="agent-desc">${esc(truncate(a.description, 100))}</span></td>
+            <td>${catBadges}</td>
+            <td><div class="platform-dots">${dots}</div></td>
+            <td><button class="row-actions-btn" title="Edit" onclick="event.stopPropagation();editAgent('${esc(a.name)}')">✎</button></td>
+        </tr>`;
     }).join('');
+
+    updateBulkBar();
+    const selectAll = document.getElementById('select-all');
+    if (selectAll) selectAll.checked = filtered.length > 0 && filtered.every(a => selectedAgents.has(a.name));
 }
 
-async function selectAgent(name) {
+// ── Platform toggle ──
+async function togglePlatform(agentName, platform, enable) {
+    const agentsMap = JSON.parse(JSON.stringify(config.agents || {}));
+    const entry = agentsMap[agentName] || { targets: [], disabled: false };
+    let current = resolveTargets(entry, knownTargets);
+
+    if (enable) {
+        if (!current.includes(platform)) current.push(platform);
+    } else {
+        current = current.filter(t => t !== platform);
+    }
+    entry.targets = current;
+    entry.disabled = false;
+    agentsMap[agentName] = entry;
+
     try {
-        const a = await api('/api/agents/' + name);
-        selectedAgent = a;
-        openDetailPanel(a);
-        renderAgentsGrid();
+        await api('/api/config', {
+            method: 'PUT',
+            body: JSON.stringify({ targets: config.targets, agents: agentsMap }),
+        });
+        config.agents = agentsMap;
+        renderAgentsTable();
+        showSnackbar(`${agentName}: ${PLATFORM_NAMES[platform] || platform} ${enable ? 'enabled' : 'disabled'}`);
     } catch (e) {
-        showSnackbar('Failed to load agent: ' + e.message, 6000);
+        showSnackbar('Failed: ' + e.message, 4000);
     }
 }
 
-function openDetailPanel(agent) {
-    const app = document.getElementById('app');
-    app.classList.add('detail-open');
-
-    document.getElementById('detail-title').textContent = agent.name;
-
-    const catLabel = CATEGORIES[agent.category] || agent.category || 'Uncategorized';
-    const body = document.getElementById('detail-body');
-
-    body.innerHTML = `
-        <div class="detail-meta">
-            ${agent.description ? `<div class="detail-meta-row">
-                <span class="meta-label">Description</span>
-                <span class="meta-value">${escapeHtml(agent.description)}</span>
-            </div>` : ''}
-            <div class="detail-meta-row">
-                <span class="meta-label">Category</span>
-                <span class="meta-value">${escapeHtml(catLabel)}</span>
-            </div>
-            ${agent.frontmatter && agent.frontmatter.mode ? `<div class="detail-meta-row">
-                <span class="meta-label">Mode</span>
-                <span class="meta-value">${escapeHtml(agent.frontmatter.mode)}</span>
-            </div>` : ''}
-            ${agent.frontmatter && agent.frontmatter.targets ? `<div class="detail-meta-row">
-                <span class="meta-label">Targets</span>
-                <span class="meta-value">${escapeHtml(agent.frontmatter.targets)}</span>
-            </div>` : ''}
-        </div>
-        <div class="md-content">${renderMarkdown(agent.content || '')}</div>
-    `;
-
-    document.getElementById('detail-edit-btn').onclick = () => editAgent(agent.name);
-    document.getElementById('detail-delete-btn').onclick = () => deleteAgent(agent.name);
+// ═══════════════════════════════════
+// BULK SELECTION
+// ═══════════════════════════════════
+function toggleAgentSelect(name, checked) {
+    if (checked) selectedAgents.add(name);
+    else selectedAgents.delete(name);
+    renderAgentsTable();
 }
 
-function closeDetail() {
-    document.getElementById('app').classList.remove('detail-open');
-    selectedAgent = null;
-    renderAgentsGrid();
+function toggleSelectAll(checked) {
+    const filtered = getFilteredAgents();
+    if (checked) filtered.forEach(a => selectedAgents.add(a.name));
+    else filtered.forEach(a => selectedAgents.delete(a.name));
+    renderAgentsTable();
 }
 
-async function showCreateAgent() {
-    let targets = [];
-    try {
-        const res = await api('/api/targets');
-        targets = res.targets || [];
-    } catch (e) { console.error(e); }
+function clearSelection() {
+    selectedAgents.clear();
+    renderAgentsTable();
+}
 
-    let targetCheckboxes = targets.map(t =>
-        `<label class="checkbox-label"><input type="checkbox" name="agent-target" value="${escapeHtml(t)}" checked> ${escapeHtml(t)}</label>`
+function updateBulkBar() {
+    const bar = document.getElementById('bulk-bar');
+    if (selectedAgents.size === 0) {
+        bar.classList.add('hidden');
+        return;
+    }
+    bar.classList.remove('hidden');
+    document.getElementById('bulk-count').textContent = `${selectedAgents.size} selected`;
+
+    document.getElementById('bulk-enable-targets').innerHTML = knownTargets.map(t =>
+        `<button class="bulk-target-btn" onclick="bulkTogglePlatform('${esc(t)}', true)">${esc(PLATFORM_LABELS[t] || t)}</button>`
     ).join('');
 
-    const categories = Object.entries(CATEGORIES);
-    let categoryOptions = '<option value="">None</option>' +
-        categories.map(([id, label]) => `<option value="${id}">${escapeHtml(label)}</option>`).join('');
-
-    document.getElementById('modal-title').textContent = 'Create Agent';
-    document.getElementById('modal-body').innerHTML = `
-        <label for="agent-name">Agent Name</label>
-        <input type="text" class="m3-input" id="agent-name" placeholder="my-agent" aria-required="true">
-        <div class="m3-input-error-msg" id="agent-name-error" style="display:none"></div>
-        <label for="agent-description">Description</label>
-        <input type="text" class="m3-input" id="agent-description" placeholder="Short description of the agent">
-        <label for="agent-category">Category</label>
-        <select class="m3-select" id="agent-category" style="width:100%">${categoryOptions}</select>
-        <label>Targets</label>
-        <div class="target-checkboxes">${targetCheckboxes}</div>
-        <label for="agent-content">Content (Markdown)</label>
-        <textarea class="m3-textarea" id="agent-content" placeholder="# My Agent\n\n## Role\n\nDescribe the agent's role.\n\n## Guidelines\n\n- Guideline 1\n- Guideline 2"></textarea>
-    `;
-    document.getElementById('modal-actions').innerHTML = `
-        <button class="m3-btn m3-btn-text" onclick="closeModal()">Cancel</button>
-        <button class="m3-btn m3-btn-filled" onclick="createAgent()">Create</button>
-    `;
-    openModal();
+    document.getElementById('bulk-disable-targets').innerHTML = knownTargets.map(t =>
+        `<button class="bulk-target-btn bulk-disable" onclick="bulkTogglePlatform('${esc(t)}', false)">${esc(PLATFORM_LABELS[t] || t)}</button>`
+    ).join('');
 }
 
-function clearValidation() {
-    document.querySelectorAll('.m3-input-error').forEach(el => el.classList.remove('m3-input-error'));
-    document.querySelectorAll('.m3-input-error-msg').forEach(el => { el.style.display = 'none'; el.textContent = ''; });
-}
-
-function showFieldError(fieldId, message) {
-    const field = document.getElementById(fieldId);
-    const errorEl = document.getElementById(fieldId + '-error');
-    if (field) field.classList.add('m3-input-error');
-    if (errorEl) {
-        errorEl.textContent = message;
-        errorEl.style.display = 'block';
+async function bulkTogglePlatform(platform, enable) {
+    const agentsMap = JSON.parse(JSON.stringify(config.agents || {}));
+    for (const name of selectedAgents) {
+        const entry = agentsMap[name] || { targets: [], disabled: false };
+        let current = resolveTargets(entry, knownTargets);
+        if (enable) {
+            if (!current.includes(platform)) current.push(platform);
+        } else {
+            current = current.filter(t => t !== platform);
+        }
+        entry.targets = current;
+        entry.disabled = false;
+        agentsMap[name] = entry;
+    }
+    try {
+        await api('/api/config', {
+            method: 'PUT',
+            body: JSON.stringify({ targets: config.targets, agents: agentsMap }),
+        });
+        config.agents = agentsMap;
+        renderAgentsTable();
+        showSnackbar(`${selectedAgents.size} agents: ${PLATFORM_NAMES[platform] || platform} ${enable ? 'enabled' : 'disabled'}`);
+    } catch (e) {
+        showSnackbar('Bulk update failed: ' + e.message, 4000);
     }
 }
 
-async function createAgent() {
-    clearValidation();
-    const name = document.getElementById('agent-name').value.trim();
-    const description = document.getElementById('agent-description').value.trim();
-    const category = document.getElementById('agent-category').value;
-    const content = document.getElementById('agent-content').value;
+async function bulkEnableAll() {
+    const agentsMap = JSON.parse(JSON.stringify(config.agents || {}));
+    for (const name of selectedAgents) {
+        const entry = agentsMap[name] || { targets: [], disabled: false };
+        entry.targets = [...knownTargets];
+        entry.disabled = false;
+        agentsMap[name] = entry;
+    }
+    try {
+        await api('/api/config', {
+            method: 'PUT',
+            body: JSON.stringify({ targets: config.targets, agents: agentsMap }),
+        });
+        config.agents = agentsMap;
+        renderAgentsTable();
+        showSnackbar(`${selectedAgents.size} agents: all platforms enabled`);
+    } catch (e) {
+        showSnackbar('Bulk update failed: ' + e.message, 4000);
+    }
+}
 
-    if (!name) {
-        showFieldError('agent-name', 'Name is required');
+async function bulkDisableAll() {
+    const agentsMap = JSON.parse(JSON.stringify(config.agents || {}));
+    for (const name of selectedAgents) {
+        const entry = agentsMap[name] || { targets: [], disabled: false };
+        entry.targets = [];
+        entry.disabled = false;
+        agentsMap[name] = entry;
+    }
+    try {
+        await api('/api/config', {
+            method: 'PUT',
+            body: JSON.stringify({ targets: config.targets, agents: agentsMap }),
+        });
+        config.agents = agentsMap;
+        renderAgentsTable();
+        showSnackbar(`${selectedAgents.size} agents: all platforms disabled`);
+    } catch (e) {
+        showSnackbar('Bulk update failed: ' + e.message, 4000);
+    }
+}
+
+// ═══════════════════════════════════
+// AGENT PANEL (view / create / edit)
+// ═══════════════════════════════════
+function openPanel() {
+    document.getElementById('panel-overlay').classList.remove('hidden');
+    document.getElementById('agent-panel').classList.add('open');
+}
+
+function closePanel() {
+    document.getElementById('panel-overlay').classList.add('hidden');
+    document.getElementById('agent-panel').classList.remove('open');
+    panelMode = null;
+    panelAgent = null;
+}
+
+async function viewAgent(name) {
+    try {
+        const a = await api('/api/agents/' + name);
+        panelAgent = a;
+        panelMode = 'view';
+        const entry = config.agents?.[a.name];
+        const active = resolveTargets(entry, knownTargets);
+
+        document.getElementById('panel-title').textContent = a.name;
+        document.getElementById('panel-body').innerHTML = `
+            <div class="detail-meta">
+                ${a.description ? `<div class="detail-row"><span class="detail-label">Description</span><span class="detail-value">${esc(a.description)}</span></div>` : ''}
+                <div class="detail-row"><span class="detail-label">Categories</span><span class="detail-value">${agentCategories(a).map(c => esc(catLabel(c))).join(', ') || '—'}</span></div>
+                <div class="detail-row"><span class="detail-label">Platforms</span><span class="detail-value">${active.length ? active.map(t => esc(PLATFORM_NAMES[t] || t)).join(', ') : 'None'}</span></div>
+            </div>
+            <div class="detail-content">${esc(a.content || '(empty)')}</div>
+        `;
+        document.getElementById('panel-footer').innerHTML = `
+            <button class="btn btn-ghost" onclick="closePanel()">Close</button>
+            <button class="btn btn-secondary" onclick="editAgent('${esc(a.name)}')">Edit</button>
+            <button class="btn btn-danger-text btn-sm" onclick="deleteAgent('${esc(a.name)}')">Delete</button>
+        `;
+        openPanel();
+    } catch (e) {
+        showSnackbar('Failed to load: ' + e.message, 4000);
+    }
+}
+
+function showCreateAgent() {
+    panelMode = 'create';
+    panelAgent = null;
+    document.getElementById('panel-title').textContent = 'New Agent';
+    renderAgentForm({ name: '', description: '', categories: [], content: '', targets: [...knownTargets] });
+    document.getElementById('panel-footer').innerHTML = `
+        <button class="btn btn-ghost" onclick="closePanel()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitCreateAgent()">Create</button>
+    `;
+    openPanel();
+    setTimeout(() => {
+        const inp = document.getElementById('form-name');
+        if (inp) inp.focus();
+    }, 200);
+}
+
+async function editAgent(name) {
+    try {
+        const a = await api('/api/agents/' + name);
+        panelMode = 'edit';
+        panelAgent = a;
+        const entry = config.agents?.[a.name];
+        const active = resolveTargets(entry, knownTargets);
+
+        document.getElementById('panel-title').textContent = 'Edit: ' + a.name;
+        renderAgentForm({
+            name: a.name,
+            description: a.description || '',
+            categories: agentCategories(a),
+            content: a.content || '',
+            targets: active,
+            isEdit: true,
+        });
+        document.getElementById('panel-footer').innerHTML = `
+            <button class="btn btn-ghost" onclick="closePanel()">Cancel</button>
+            <button class="btn btn-primary" onclick="submitEditAgent('${esc(a.name)}')">Save</button>
+        `;
+        openPanel();
+    } catch (e) {
+        showSnackbar('Failed to load: ' + e.message, 4000);
+    }
+}
+
+function renderAgentForm({ name, description, categories = [], content, targets, isEdit = false }) {
+    const existingCats = allCategories();
+    const catChips = existingCats.map(c => {
+        const checked = categories.includes(c);
+        return `<label class="target-chip ${checked ? 'checked' : ''}" onclick="this.classList.toggle('checked')">
+            <input type="checkbox" name="form-category" value="${esc(c)}" ${checked ? 'checked' : ''}>
+            ${esc(catLabel(c))}
+        </label>`;
+    }).join('');
+
+    const targetChips = knownTargets.map(t => {
+        const checked = targets.includes(t);
+        return `<label class="target-chip ${checked ? 'checked' : ''}" onclick="this.classList.toggle('checked')">
+            <input type="checkbox" name="form-target" value="${esc(t)}" ${checked ? 'checked' : ''}>
+            ${esc(PLATFORM_NAMES[t] || t)}
+        </label>`;
+    }).join('');
+
+    document.getElementById('panel-body').innerHTML = `
+        <div class="form-group">
+            <label class="form-label" for="form-name">Name</label>
+            <input class="form-input" id="form-name" value="${esc(name)}" placeholder="my-agent" ${isEdit ? 'disabled' : ''}>
+            <div class="form-error hidden" id="form-name-error"></div>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="form-desc">Description</label>
+            <input class="form-input" id="form-desc" value="${esc(description)}" placeholder="Short description…">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Categories</label>
+            <div class="form-targets">${catChips}</div>
+            <div style="display:flex;gap:6px;margin-top:8px">
+                <input class="form-input" id="form-new-cat" placeholder="New category…" style="flex:1">
+                <button class="btn btn-secondary btn-sm" type="button" onclick="addCustomCategory()">Add</button>
+            </div>
+            <div class="form-hint">Select existing or type a new category name</div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Platforms</label>
+            <div class="form-targets">${targetChips}</div>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="form-content">Prompt (Markdown)</label>
+            <textarea class="form-textarea" id="form-content" placeholder="# Agent Name\n\n## Role\n\nDescribe what this agent does…">${esc(content)}</textarea>
+        </div>
+    `;
+}
+
+function addCustomCategory() {
+    const input = document.getElementById('form-new-cat');
+    const val = input.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
+    if (!val) return;
+    // Check if already exists
+    const existing = document.querySelector(`input[name="form-category"][value="${val}"]`);
+    if (existing) {
+        existing.checked = true;
+        existing.closest('.target-chip').classList.add('checked');
+        input.value = '';
         return;
     }
-    const cleanName = name.replace(/^da-/, '');
-    if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(cleanName)) {
-        showFieldError('agent-name', 'Name must contain only alphanumeric characters, hyphens, and underscores');
+    // Add new chip
+    const container = input.closest('.form-group').querySelector('.form-targets');
+    const chip = document.createElement('label');
+    chip.className = 'target-chip checked';
+    chip.onclick = function() { this.classList.toggle('checked'); };
+    chip.innerHTML = `<input type="checkbox" name="form-category" value="${esc(val)}" checked> ${esc(val)}`;
+    container.appendChild(chip);
+    input.value = '';
+}
+
+function getFormData() {
+    const name = document.getElementById('form-name').value.trim();
+    const description = document.getElementById('form-desc').value.trim();
+    const catChecks = document.querySelectorAll('input[name="form-category"]:checked');
+    const category = Array.from(catChecks).map(c => c.value).join(',');
+    const content = document.getElementById('form-content').value;
+    const checks = document.querySelectorAll('input[name="form-target"]:checked');
+    const targets = Array.from(checks).map(c => c.value);
+    return { name, description, category, content, targets };
+}
+
+async function submitCreateAgent() {
+    const data = getFormData();
+    const errEl = document.getElementById('form-name-error');
+    errEl.classList.add('hidden');
+    document.getElementById('form-name').classList.remove('has-error');
+
+    if (!data.name) {
+        document.getElementById('form-name').classList.add('has-error');
+        errEl.textContent = 'Name is required';
+        errEl.classList.remove('hidden');
         return;
     }
-
-    const checked = document.querySelectorAll('input[name="agent-target"]:checked');
-    const targets = Array.from(checked).map(cb => cb.value);
-    if (targets.length === 0) {
-        showSnackbar('Select at least one target platform');
+    if (data.targets.length === 0) {
+        showSnackbar('Select at least one platform');
         return;
     }
 
     try {
         await api('/api/agents', {
             method: 'POST',
-            body: JSON.stringify({
-                name,
-                content: content || '',
-                description: description || undefined,
-                category: category || undefined,
-                targets,
-            }),
+            body: JSON.stringify(data),
         });
-        closeModal();
-        showSnackbar(`Agent "${name}" created`);
+        closePanel();
+        showSnackbar(`Agent "${data.name}" created`);
         loadAgents();
     } catch (e) {
-        showSnackbar('Create failed: ' + e.message, 6000);
+        showSnackbar('Create failed: ' + e.message, 5000);
     }
 }
 
-async function editAgent(name) {
-    try {
-        const [a, targetsRes] = await Promise.all([
-            api('/api/agents/' + name),
-            api('/api/targets'),
-        ]);
-        const allTargets = targetsRes.targets || [];
-
-        const agentConfig = await api('/api/config').catch(() => null);
-        const agentEntry = agentConfig?.agents?.[name];
-        const currentTargets = agentEntry
-            ? resolveAgentTargets(agentEntry, allTargets)
-            : allTargets;
-
-        const categories = Object.entries(CATEGORIES);
-        let categoryOptions = '<option value="">None</option>' +
-            categories.map(([id, label]) =>
-                `<option value="${id}" ${a.category === id ? 'selected' : ''}>${escapeHtml(label)}</option>`
-            ).join('');
-
-        let targetCheckboxes = allTargets.map(t =>
-            `<label class="checkbox-label">
-                <input type="checkbox" name="edit-target" value="${escapeHtml(t)}" ${currentTargets.includes(t) ? 'checked' : ''}>
-                ${escapeHtml(t)}
-            </label>`
-        ).join('');
-
-        document.getElementById('modal-title').textContent = 'Edit: ' + name;
-        document.getElementById('modal-body').innerHTML = `
-            <label for="edit-description">Description</label>
-            <input type="text" class="m3-input" id="edit-description" value="${escapeHtml(a.description || '')}">
-            <label for="edit-category">Category</label>
-            <select class="m3-select" id="edit-category" style="width:100%">${categoryOptions}</select>
-            <label>Targets</label>
-            <div class="target-checkboxes">${targetCheckboxes}</div>
-            <label for="agent-content">Content (Markdown)</label>
-            <textarea class="m3-textarea" id="agent-content">${escapeHtml(a.content || '')}</textarea>
-        `;
-        document.getElementById('modal-actions').innerHTML = `
-            <button class="m3-btn m3-btn-text" onclick="closeModal()">Cancel</button>
-            <button class="m3-btn m3-btn-filled" onclick="saveAgent('${escapeHtml(name)}')">Save</button>
-        `;
-        openModal();
-    } catch (e) {
-        showSnackbar('Failed to load agent: ' + e.message, 6000);
+async function submitEditAgent(name) {
+    const data = getFormData();
+    if (data.targets.length === 0) {
+        showSnackbar('Select at least one platform');
+        return;
     }
-}
-
-async function saveAgent(name) {
-    const content = document.getElementById('agent-content').value;
-    const description = document.getElementById('edit-description').value.trim();
-    const category = document.getElementById('edit-category').value;
-    const checked = document.querySelectorAll('input[name="edit-target"]:checked');
-    const targets = Array.from(checked).map(cb => cb.value);
 
     try {
         await api('/api/agents/' + name, {
             method: 'PUT',
             body: JSON.stringify({
-                content,
-                description,
-                category,
-                targets,
+                content: data.content,
+                description: data.description,
+                category: data.category,
+                targets: data.targets,
             }),
         });
-        closeModal();
-        showSnackbar(`Agent "${name}" updated`);
-        if (selectedAgent && selectedAgent.name === name) {
-            selectAgent(name);
-        }
+        closePanel();
+        showSnackbar(`Agent "${name}" saved`);
         loadAgents();
     } catch (e) {
-        showSnackbar('Save failed: ' + e.message, 6000);
+        showSnackbar('Save failed: ' + e.message, 5000);
     }
 }
 
 async function deleteAgent(name) {
-    if (!confirm('Delete agent "' + name + '"?')) return;
+    const ok = await showConfirm(
+        `Delete "${name}"?`,
+        'This removes the agent file and its config entry. This cannot be undone.'
+    );
+    if (!ok) return;
+
     try {
         await api('/api/agents/' + name, { method: 'DELETE' });
-        if (selectedAgent && selectedAgent.name === name) {
-            closeDetail();
-        }
+        closePanel();
         showSnackbar(`Agent "${name}" deleted`);
         loadAgents();
     } catch (e) {
-        showSnackbar('Delete failed: ' + e.message, 6000);
+        showSnackbar('Delete failed: ' + e.message, 5000);
     }
 }
 
-let targetFilter = 'all';
-let targetConfig = null;
-let allPlatforms = [];
-
-const PLATFORM_ICONS = {
-    'claude-code': '\u{1F4AC}',
-    'cursor': '\u{1F4BB}',
-    'gemini-cli': '\u{2728}',
-    'opencode': '\u{26A1}',
-};
-
-function resolveAgentTargets(agentEntry, platforms) {
-    if (!agentEntry || agentEntry.disabled) return [];
-    const t = agentEntry.targets || [];
-    if (t.length === 1 && t[0] === 'all') return [...platforms];
-    return t;
-}
-
-async function loadTargets() {
-    showLoading('target-matrix');
-    try {
-        const [config, agents, validResp] = await Promise.all([
-            api('/api/config'),
-            api('/api/agents'),
-            api('/api/targets'),
-        ]);
-        targetConfig = config;
-        allPlatforms = validResp.targets || [];
-        const agentList = agents || [];
-        const agentMap = config.agents || {};
-
-        const enabled = agentList.filter(a => {
-            const entry = agentMap[a.name];
-            return entry && resolveAgentTargets(entry, allPlatforms).length > 0;
-        }).length;
-
-        document.getElementById('matrix-stat-total').textContent = agentList.length;
-        document.getElementById('matrix-stat-enabled').textContent = enabled;
-        document.getElementById('matrix-stat-disabled').textContent = agentList.length - enabled;
-        document.getElementById('matrix-stat-platforms').textContent = allPlatforms.length;
-
-        renderTargetFilterChips(enabled, agentList.length - enabled);
-        renderTargetMatrix(agentList, allPlatforms, agentMap);
-    } catch (e) {
-        showError('target-matrix', e.message);
-    }
-}
-
-function renderTargetFilterChips(enabledCount, disabledCount) {
-    const container = document.getElementById('matrix-filter-chips');
-    container.innerHTML = `
-        <button class="chip ${targetFilter === 'all' ? 'selected' : ''}" onclick="filterTargetView('all')">
-            <span class="chip-check">✓</span> All (${enabledCount + disabledCount})
-        </button>
-        <button class="chip ${targetFilter === 'enabled' ? 'selected' : ''}" onclick="filterTargetView('enabled')">
-            <span class="chip-check">✓</span> Enabled (${enabledCount})
-        </button>
-        <button class="chip ${targetFilter === 'disabled' ? 'selected' : ''}" onclick="filterTargetView('disabled')">
-            <span class="chip-check">✓</span> Disabled (${disabledCount})
-        </button>
-    `;
-}
-
-function filterTargetView(filter) {
-    targetFilter = filter;
-    loadTargets();
-}
-
-function renderTargetMatrix(agentList, targets, agentMap) {
-    const matrix = document.getElementById('target-matrix');
-
-    const colCounts = {};
-    targets.forEach(t => colCounts[t] = 0);
-    agentList.forEach(a => {
-        const resolved = resolveAgentTargets(agentMap[a.name], targets);
-        resolved.forEach(t => colCounts[t] = (colCounts[t] || 0) + 1);
-    });
-
-    let filtered = agentList;
-    if (targetFilter === 'enabled') {
-        filtered = agentList.filter(a => {
-            const resolved = resolveAgentTargets(agentMap[a.name], targets);
-            return resolved.length > 0;
-        });
-    } else if (targetFilter === 'disabled') {
-        filtered = agentList.filter(a => {
-            const resolved = resolveAgentTargets(agentMap[a.name], targets);
-            return resolved.length === 0;
-        });
-    }
-
-    let html = '<table><thead><tr><th class="matrix-agent-header">Agent</th>';
-    targets.forEach(t => {
-        const icon = PLATFORM_ICONS[t] || '';
-        html += `<th class="matrix-platform-header">
-            <span class="platform-icon">${icon}</span>
-            <span class="platform-name">${escapeHtml(t)}</span>
-            <span class="platform-count">${colCounts[t]}</span>
-        </th>`;
-    });
-    html += '</tr></thead><tbody>';
-
-    filtered.forEach(a => {
-        const entry = agentMap[a.name] || { targets: [], disabled: false };
-        const resolved = resolveAgentTargets(entry, targets);
-        const isEnabled = resolved.length > 0;
-        const rowClass = isEnabled ? 'matrix-row-enabled' : 'matrix-row-disabled';
-
-        html += `<tr class="${rowClass}"><td class="matrix-agent-name">`;
-        if (entry.disabled) {
-            html += `<span class="agent-disabled-badge" title="Explicitly disabled">\u{1F6AB}</span> `;
-        }
-        html += `${escapeHtml(a.name)}</td>`;
-
-        targets.forEach(t => {
-            const isTargeted = resolved.includes(t);
-            const cellClass = isTargeted ? 'cell-enabled' : (entry.disabled ? 'cell-explicit-disabled' : 'cell-disabled');
-            const icon = isTargeted ? '✓' : (entry.disabled ? '\u{1F6AB}' : '—');
-            const tooltip = isTargeted ? `Remove ${a.name} from ${t}` : `Add ${a.name} to ${t}`;
-            html += `<td class="${cellClass}" title="${tooltip}" onclick="toggleAgentTarget('${escapeHtml(a.name)}', '${escapeHtml(t)}')">${icon}</td>`;
-        });
-        html += '</tr>';
-    });
-
-    html += '</tbody></table>';
-    matrix.innerHTML = html;
-}
-
-async function toggleAgentTarget(agentName, targetName) {
-    if (!targetConfig) return;
-    const targets = targetConfig.targets || [];
-    const agents = JSON.parse(JSON.stringify(targetConfig.agents || {}));
-
-    if (!agents[agentName]) {
-        agents[agentName] = { targets: [targetName], disabled: false };
-    } else {
-        const entry = agents[agentName];
-        let current = entry.targets || [];
-
-        if (current.length === 1 && current[0] === 'all') {
-            current = allPlatforms.filter(t => t !== targetName);
-            if (current.length === 0) current = [];
-        } else {
-            const idx = current.indexOf(targetName);
-            if (idx >= 0) {
-                current.splice(idx, 1);
-            } else {
-                current.push(targetName);
-            }
-        }
-
-        entry.targets = current;
-    }
-
-    try {
-        await api('/api/config', {
-            method: 'PUT',
-            body: JSON.stringify({ targets, agents }),
-        });
-        showSnackbar(`${agentName}: ${targetName} updated`);
-        loadTargets();
-    } catch (e) {
-        showSnackbar('Failed to update: ' + e.message, 6000);
-    }
-}
-
+// ═══════════════════════════════════
+// PREVIEW TAB
+// ═══════════════════════════════════
 async function loadPreviewOptions() {
-    const output = document.getElementById('preview-output');
-    output.textContent = 'Select an agent and target to preview the rendered output.';
-
-    const copyBtn = document.getElementById('preview-copy-btn');
-    if (copyBtn) copyBtn.style.display = 'none';
-
     try {
-        const [agents, targets] = await Promise.all([
-            api('/api/agents'),
-            api('/api/targets'),
-        ]);
+        if (agents.length === 0) await loadAll();
         const agentSel = document.getElementById('preview-agent');
         const targetSel = document.getElementById('preview-target');
-        agentSel.innerHTML = '<option value="">Select agent</option>';
-        targetSel.innerHTML = '<option value="">Select target</option>';
-        (agents || []).forEach(a => {
-            agentSel.innerHTML += `<option value="${escapeHtml(a.name)}">${escapeHtml(a.name)}</option>`;
-        });
-        (targets.targets || []).forEach(t => {
-            targetSel.innerHTML += `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`;
-        });
+        const prevAgent = agentSel.value;
+        const prevTarget = targetSel.value;
+
+        agentSel.innerHTML = '<option value="">Select agent…</option>' +
+            agents.map(a => `<option value="${esc(a.name)}" ${a.name === prevAgent ? 'selected' : ''}>${esc(a.name)}</option>`).join('');
+        targetSel.innerHTML = '<option value="">Select platform…</option>' +
+            knownTargets.map(t => `<option value="${esc(t)}" ${t === prevTarget ? 'selected' : ''}>${esc(PLATFORM_NAMES[t] || t)}</option>`).join('');
     } catch (e) {
-        console.error(e);
+        showSnackbar('Failed to load options: ' + e.message, 4000);
     }
+}
+
+let previewDebounce = null;
+function autoPreview() {
+    clearTimeout(previewDebounce);
+    previewDebounce = setTimeout(loadPreview, 150);
 }
 
 async function loadPreview() {
     const agent = document.getElementById('preview-agent').value;
     const target = document.getElementById('preview-target').value;
+    const output = document.getElementById('preview-output');
+    const copyBtn = document.getElementById('preview-copy-btn');
+
     if (!agent || !target) {
-        showSnackbar('Select both agent and target');
+        output.textContent = 'Select an agent and platform to preview rendered output.';
+        copyBtn.disabled = true;
         return;
     }
-    const output = document.getElementById('preview-output');
-    output.textContent = 'Loading preview...';
+
+    output.textContent = 'Loading…';
     try {
         const res = await api('/api/preview/' + agent + '/' + target);
-        output.textContent = res.content || '';
-        const copyBtn = document.getElementById('preview-copy-btn');
-        if (copyBtn) copyBtn.style.display = 'inline-flex';
+        output.textContent = res.content || '(empty output)';
+        copyBtn.disabled = false;
     } catch (e) {
         output.textContent = 'Error: ' + e.message;
+        copyBtn.disabled = true;
     }
 }
 
 function copyPreview() {
     const text = document.getElementById('preview-output').textContent;
-    navigator.clipboard.writeText(text).then(() => showSnackbar('Copied to clipboard'));
+    navigator.clipboard.writeText(text).then(() => showSnackbar('Copied'));
 }
 
-let statusFilter = 'all';
-let statusSearchQuery = '';
-let allStatusLinks = [];
-
+// ═══════════════════════════════════
+// STATUS TAB
+// ═══════════════════════════════════
 async function loadStatus() {
-    showLoading('status-content');
     try {
-        const status = await api('/api/status');
-        allStatusLinks = status.symlinks || [];
-
-        const controls = document.getElementById('status-controls');
-        if (controls) {
-            controls.style.display = allStatusLinks.length > 0 ? 'flex' : 'none';
-        }
-
-        renderStatusFilterChips();
+        if (statusLinks.length === 0 && agents.length === 0) await loadAll();
+        renderStatusChips();
         renderStatusList();
     } catch (e) {
-        showError('status-content', e.message);
+        showSnackbar('Failed to load status: ' + e.message, 4000);
     }
 }
 
-function renderStatusFilterChips() {
-    const container = document.getElementById('status-filter-chips');
-    if (!container) return;
-    const broken = allStatusLinks.filter(l => l.broken).length;
-    const healthy = allStatusLinks.length - broken;
+function renderStatusChips() {
+    const broken = statusLinks.filter(l => l.broken).length;
+    const healthy = statusLinks.length - broken;
+    const container = document.getElementById('status-chips');
     container.innerHTML = `
-        <button class="chip ${statusFilter === 'all' ? 'selected' : ''}" onclick="filterStatusView('all')">
-            <span class="chip-check">✓</span> All (${allStatusLinks.length})
-        </button>
-        <button class="chip ${statusFilter === 'healthy' ? 'selected' : ''}" onclick="filterStatusView('healthy')">
-            <span class="chip-check">✓</span> Healthy (${healthy})
-        </button>
-        <button class="chip ${statusFilter === 'broken' ? 'selected' : ''}" onclick="filterStatusView('broken')">
-            <span class="chip-check">✓</span> Broken (${broken})
-        </button>
+        <button class="chip ${statusFilter === 'all' ? 'active' : ''}" onclick="setStatusFilter('all')">All ${statusLinks.length}</button>
+        <button class="chip ${statusFilter === 'healthy' ? 'active' : ''}" onclick="setStatusFilter('healthy')">Healthy ${healthy}</button>
+        <button class="chip ${statusFilter === 'broken' ? 'active' : ''}" onclick="setStatusFilter('broken')">Broken ${broken}</button>
     `;
 }
 
-function filterStatusView(filter) {
-    statusFilter = filter;
-    renderStatusFilterChips();
-    renderStatusList();
-}
-
-function filterStatus() {
-    statusSearchQuery = document.getElementById('status-search').value.toLowerCase().trim();
+function setStatusFilter(f) {
+    statusFilter = f;
+    renderStatusChips();
     renderStatusList();
 }
 
 function renderStatusList() {
-    const el = document.getElementById('status-content');
-    let links = allStatusLinks;
+    const list = document.getElementById('status-list');
+    const empty = document.getElementById('status-empty');
 
-    if (statusFilter === 'healthy') {
-        links = links.filter(l => !l.broken);
-    } else if (statusFilter === 'broken') {
-        links = links.filter(l => l.broken);
-    }
+    let filtered = statusLinks;
+    if (statusFilter === 'healthy') filtered = filtered.filter(l => !l.broken);
+    else if (statusFilter === 'broken') filtered = filtered.filter(l => l.broken);
 
-    if (statusSearchQuery) {
-        links = links.filter(l =>
-            l.agent.toLowerCase().includes(statusSearchQuery) ||
-            l.platform.toLowerCase().includes(statusSearchQuery) ||
-            l.path.toLowerCase().includes(statusSearchQuery)
-        );
-    }
-
-    if (links.length === 0) {
-        el.innerHTML = `<div class="empty-state">
-            <div class="empty-icon">&#128196;</div>
-            <h3>${allStatusLinks.length === 0 ? 'No symlinks found' : 'No matching symlinks'}</h3>
-            <p>${allStatusLinks.length === 0 ? 'Run sync first to generate platform-specific agent files.' : 'Try adjusting your filter or search.'}</p>
-        </div>`;
+    if (filtered.length === 0) {
+        list.innerHTML = '';
+        empty.classList.remove('hidden');
         return;
     }
+    empty.classList.add('hidden');
 
-    el.innerHTML = links.map(l => {
-        const cls = l.broken ? 'status-err' : 'status-ok';
-        const icon = l.broken ? '&#10005;' : '&#10003;';
-        return `<div class="status-item ${cls}">
-            <div class="status-icon">${icon}</div>
-            <span class="status-text">${escapeHtml(l.agent)} &rarr; ${escapeHtml(l.platform)}</span>
-            <span class="status-path">${escapeHtml(l.path)}</span>
-        </div>`;
-    }).join('');
+    list.innerHTML = filtered.map(l => `
+        <div class="status-row">
+            <span class="status-dot ${l.broken ? 'status-dot-err' : 'status-dot-ok'}"></span>
+            <span class="status-agent">${esc(l.agent)}</span>
+            <span class="status-platform">${esc(PLATFORM_NAMES[l.platform] || l.platform)}</span>
+            <span class="status-path">${esc(l.path)}</span>
+            <div class="status-row-actions">
+                <button class="btn btn-ghost btn-sm" onclick="quickPreview('${esc(l.agent)}','${esc(l.platform)}')">Preview</button>
+            </div>
+        </div>
+    `).join('');
 }
 
+function quickPreview(agent, platform) {
+    switchTab('preview');
+    setTimeout(() => {
+        document.getElementById('preview-agent').value = agent;
+        document.getElementById('preview-target').value = platform;
+        loadPreview();
+    }, 100);
+}
+
+// ═══════════════════════════════════
+// SYNC / CLEAN
+// ═══════════════════════════════════
 async function triggerSync() {
-    if (!confirm('Sync all agents to detected platforms?')) return;
-    const btns = document.querySelectorAll('[onclick*="triggerSync"]');
-    btns.forEach(b => { b.classList.add('m3-btn-loading'); b.disabled = true; });
+    const ok = await showConfirm(
+        'Sync all agents?',
+        'This generates platform-specific files for all enabled agents.'
+    );
+    if (!ok) return;
+
+    const btn = document.getElementById('btn-sync');
+    btn.classList.add('btn-loading');
+    btn.disabled = true;
+
     try {
         const res = await api('/api/sync', { method: 'POST' });
         showSnackbar(`Synced ${res.synced || 0} agents`);
-        if (currentPage === 'status') loadStatus();
-        if (currentPage === 'dashboard') loadDashboard();
+        await loadAll();
+        if (currentTab === 'status') renderStatusList();
+        if (currentTab === 'agents') renderAgentsTable();
     } catch (e) {
-        showSnackbar('Sync failed: ' + e.message, 6000);
+        showSnackbar('Sync failed: ' + e.message, 5000);
     } finally {
-        btns.forEach(b => { b.classList.remove('m3-btn-loading'); b.disabled = false; });
+        btn.classList.remove('btn-loading');
+        btn.disabled = false;
     }
 }
 
 async function triggerClean() {
-    if (!confirm('Remove all generated files and symlinks?')) return;
-    const btns = document.querySelectorAll('[onclick*="triggerClean"]');
-    btns.forEach(b => { b.classList.add('m3-btn-loading'); b.disabled = true; });
+    const ok = await showConfirm(
+        'Remove generated files?',
+        'Source agent files will be kept. Only generated output and symlinks will be deleted.'
+    );
+    if (!ok) return;
+
     try {
         const res = await api('/api/clean', { method: 'POST' });
-        showSnackbar(`Cleaned ${res.removed || 0} files`);
-        if (currentPage === 'status') loadStatus();
-        if (currentPage === 'dashboard') loadDashboard();
+        showSnackbar(`Removed ${res.removed || 0} files`);
+        await loadAll();
+        if (currentTab === 'status') { renderStatusChips(); renderStatusList(); }
     } catch (e) {
-        showSnackbar('Clean failed: ' + e.message, 6000);
-    } finally {
-        btns.forEach(b => { b.classList.remove('m3-btn-loading'); b.disabled = false; });
+        showSnackbar('Clean failed: ' + e.message, 5000);
     }
 }
 
-function openModal() {
-    lastFocusedElement = document.activeElement;
-    document.getElementById('modal').classList.remove('hidden');
-    const firstInput = document.querySelector('.modal-surface input, .modal-surface select, .modal-surface textarea');
-    if (firstInput) firstInput.focus();
+// ═══════════════════════════════════
+// CONFIRM MODAL
+// ═══════════════════════════════════
+function showConfirm(title, body) {
+    return new Promise(resolve => {
+        const modal = document.getElementById('modal');
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-body').textContent = body;
+        document.getElementById('modal-actions').innerHTML = `
+            <button class="btn btn-ghost" id="confirm-no">Cancel</button>
+            <button class="btn btn-primary" id="confirm-yes">Confirm</button>
+        `;
+        modal.classList.remove('hidden');
+
+        const cleanup = (result) => {
+            modal.classList.add('hidden');
+            resolve(result);
+        };
+
+        document.getElementById('confirm-no').onclick = () => cleanup(false);
+        document.getElementById('confirm-yes').onclick = () => cleanup(true);
+        modal.onclick = (e) => { if (e.target === modal) cleanup(false); };
+    });
 }
 
-function closeModal() {
-    document.getElementById('modal').classList.add('hidden');
-    clearValidation();
-    if (lastFocusedElement) {
-        lastFocusedElement.focus();
-        lastFocusedElement = null;
+// ═══════════════════════════════════
+// SEARCH
+// ═══════════════════════════════════
+const searchInput = document.getElementById('global-search');
+searchInput.addEventListener('input', (e) => {
+    searchQuery = e.target.value.trim().toLowerCase();
+    if (currentTab === 'agents') {
+        renderAgentsTable();
+    } else if (searchQuery) {
+        switchTab('agents');
     }
-}
-
-document.getElementById('modal').addEventListener('click', e => {
-    if (e.target.id === 'modal') closeModal();
 });
 
-document.addEventListener('keydown', e => {
+// ═══════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ═══════════════════════════════════
+document.addEventListener('keydown', (e) => {
+    const active = document.activeElement;
+    const typing = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT');
+
     if (e.key === 'Escape') {
         if (!document.getElementById('modal').classList.contains('hidden')) {
-            closeModal();
-        } else if (document.getElementById('app').classList.contains('detail-open')) {
-            closeDetail();
+            document.getElementById('modal').classList.add('hidden');
+        } else if (document.getElementById('agent-panel').classList.contains('open')) {
+            closePanel();
         }
+        return;
     }
-    if (e.key === 'Tab' && !document.getElementById('modal').classList.contains('hidden')) {
-        const modal = document.querySelector('.modal-surface');
-        const focusable = modal.querySelectorAll('input, select, textarea, button:not([disabled])');
-        if (focusable.length === 0) return;
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-            e.preventDefault();
-            last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-            e.preventDefault();
-            first.focus();
-        }
-    }
+
+    if (typing || e.metaKey || e.ctrlKey) return;
+
+    if (e.key === '/') { e.preventDefault(); searchInput.focus(); return; }
+    if (e.key === 'n') { e.preventDefault(); showCreateAgent(); return; }
+    if (e.key === '1') { switchTab('agents'); return; }
+    if (e.key === '2') { switchTab('preview'); return; }
+    if (e.key === '3') { switchTab('status'); return; }
 });
 
-loadDashboard();
+// ═══════════════════════════════════
+// INIT
+// ═══════════════════════════════════
+initTheme();
+loadAgents();

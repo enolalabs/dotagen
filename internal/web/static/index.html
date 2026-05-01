@@ -1,187 +1,170 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>dotagen dashboard</title>
+    <title>dotagen</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 </head>
 <body>
-    <div class="app-layout" id="app">
-        <nav class="nav-drawer" id="nav-drawer" role="navigation" aria-label="Main navigation">
-            <div class="nav-header">
-                <h1>dotagen</h1>
-                <div class="tagline">sub-agents, everywhere</div>
-            </div>
-            <div class="nav-section">
-                <div class="nav-section-label">Navigation</div>
-                <a class="nav-item active" data-page="dashboard" href="#">
-                    <span class="nav-icon">&#9632;</span>
-                    Dashboard
-                </a>
-                <a class="nav-item" data-page="agents" href="#">
-                    <span class="nav-icon">&#9881;</span>
-                    Agents
-                </a>
-                <a class="nav-item" data-page="targets" href="#">
-                    <span class="nav-icon">&#9741;</span>
-                    Targets
-                </a>
-                <a class="nav-item" data-page="preview" href="#">
-                    <span class="nav-icon">&#128196;</span>
-                    Preview
-                </a>
-                <a class="nav-item" data-page="status" href="#">
-                    <span class="nav-icon">&#10003;</span>
-                    Status
-                </a>
-            </div>
-            <div class="nav-footer">
-                <button class="m3-btn m3-btn-filled" onclick="triggerSync()" style="width:100%" aria-label="Sync all agents">
-                    Sync All
-                </button>
-                <button class="m3-btn m3-btn-outlined" onclick="triggerClean()" style="width:100%" aria-label="Clean all generated files">
-                    Clean
-                </button>
-            </div>
-        </nav>
+    <header class="toolbar" role="banner">
+        <div class="toolbar-left">
+            <span class="logo" aria-hidden="true">⚡</span>
+            <span class="logo-text">dotagen</span>
+        </div>
+        <div class="toolbar-search">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="m11 11 3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <input type="search" id="global-search" placeholder="Search agents… ( / )" aria-label="Search agents" autocomplete="off">
+        </div>
+        <div class="toolbar-right">
+            <button class="btn btn-ghost" id="btn-theme" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle light/dark theme">
+                <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/></svg>
+            </button>
+            <button class="btn btn-secondary" id="btn-sync" onclick="triggerSync()">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.5 8a6.5 6.5 0 0 1 11.48-4.15M14.5 8A6.5 6.5 0 0 1 3.02 12.15"/><path d="m10 1 3 3-3 3m-4 6-3-3 3-3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span>Sync</span>
+            </button>
+            <button class="btn btn-primary" id="btn-create" onclick="showCreateAgent()">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+                <span>New Agent</span>
+            </button>
+        </div>
+    </header>
 
-        <header class="topbar">
-            <button class="m3-btn-icon" id="nav-toggle" onclick="toggleNav()" aria-label="Toggle navigation menu">&#9776;</button>
-            <span class="topbar-title" id="topbar-title">Dashboard</span>
-            <div class="topbar-search">
-                <span class="search-icon">&#128269;</span>
-                <input type="text" id="global-search" placeholder="Search agents..." aria-label="Search agents" oninput="handleSearch(this.value)">
-            </div>
-            <div class="topbar-actions">
-                <button class="m3-btn-icon" onclick="triggerSync()" title="Sync All" aria-label="Sync all agents">&#10227;</button>
-            </div>
-        </header>
+    <nav class="tab-bar" role="tablist" aria-label="Main navigation">
+        <button class="tab active" data-tab="agents" role="tab" aria-selected="true" aria-controls="tab-agents">
+            <span>Agents</span>
+            <span class="tab-badge" id="badge-agents">0</span>
+        </button>
+        <button class="tab" data-tab="preview" role="tab" aria-selected="false" aria-controls="tab-preview">
+            <span>Preview</span>
+        </button>
+        <button class="tab" data-tab="status" role="tab" aria-selected="false" aria-controls="tab-status">
+            <span>Status</span>
+            <span class="tab-badge tab-badge-warn hidden" id="badge-status">0</span>
+        </button>
+    </nav>
 
-        <main class="main-content" id="main-content" role="main">
-            <div id="page-dashboard" class="page active">
-                <h2 class="page-title">Dashboard</h2>
-                <p class="page-subtitle">Overview of your agent configuration and sync status.</p>
-                <div class="stats-row" id="dashboard-stats">
-                    <div class="stat-card">
-                        <div class="stat-value" id="stat-agents">-</div>
-                        <div class="stat-label">Total Agents</div>
+    <main class="content" role="main">
+        <!-- AGENTS TAB -->
+        <section id="tab-agents" class="tab-panel active" role="tabpanel">
+            <div class="agents-toolbar">
+                <div class="filter-chips" id="category-chips"></div>
+                <span class="agent-count" id="agent-count"></span>
+            </div>
+            <div class="bulk-bar hidden" id="bulk-bar">
+                <span class="bulk-count" id="bulk-count">0 selected</span>
+                <span class="bulk-sep">—</span>
+                <span class="bulk-label">Enable:</span>
+                <div class="bulk-targets" id="bulk-enable-targets"></div>
+                <span class="bulk-sep">|</span>
+                <span class="bulk-label">Disable:</span>
+                <div class="bulk-targets" id="bulk-disable-targets"></div>
+                <span class="bulk-sep">|</span>
+                <button class="btn btn-ghost btn-sm" onclick="bulkEnableAll()">All On</button>
+                <button class="btn btn-ghost btn-sm" onclick="bulkDisableAll()">All Off</button>
+                <button class="btn btn-ghost btn-sm" onclick="clearSelection()">Clear</button>
+            </div>
+            <div class="agents-table-wrap">
+                <table class="agents-table" id="agents-table">
+                    <thead>
+                        <tr>
+                            <th class="col-check"><input type="checkbox" id="select-all" onchange="toggleSelectAll(this.checked)" title="Select all"></th>
+                            <th class="col-name">Agent</th>
+                            <th class="col-desc">Description</th>
+                            <th class="col-cat">Category</th>
+                            <th class="col-platforms" id="platforms-header">Platforms</th>
+                            <th class="col-actions"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="agents-tbody"></tbody>
+                </table>
+            </div>
+            <div class="agents-empty hidden" id="agents-empty">
+                <div class="empty-icon">⚡</div>
+                <h3>No agents yet</h3>
+                <p>Create your first agent or run <code>dotagen init</code> to import 144 built-in agents.</p>
+                <button class="btn btn-primary" onclick="showCreateAgent()">Create Agent</button>
+            </div>
+            <div class="agents-no-results hidden" id="agents-no-results">
+                <p>No agents match your search.</p>
+            </div>
+        </section>
+
+        <!-- PREVIEW TAB -->
+        <section id="tab-preview" class="tab-panel" role="tabpanel">
+            <div class="preview-layout">
+                <div class="preview-controls">
+                    <div class="preview-selects">
+                        <div class="select-group">
+                            <label for="preview-agent">Agent</label>
+                            <select id="preview-agent" class="select" onchange="autoPreview()">
+                                <option value="">Select agent…</option>
+                            </select>
+                        </div>
+                        <div class="select-group">
+                            <label for="preview-target">Platform</label>
+                            <select id="preview-target" class="select" onchange="autoPreview()">
+                                <option value="">Select platform…</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="stat-targets">-</div>
-                        <div class="stat-label">Targets</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="stat-synced">-</div>
-                        <div class="stat-label">Synced</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="stat-categories">-</div>
-                        <div class="stat-label">Categories</div>
+                    <div class="preview-actions">
+                        <button class="btn btn-ghost" id="preview-copy-btn" onclick="copyPreview()" disabled>Copy</button>
                     </div>
                 </div>
-                <div class="quick-actions-row" id="dashboard-actions">
-                    <button class="m3-btn m3-btn-filled" onclick="triggerSync()">Sync All</button>
-                    <button class="m3-btn m3-btn-outlined" onclick="triggerClean()">Clean All</button>
-                    <button class="m3-btn m3-btn-tonal" onclick="navigateTo('agents')">Manage Agents</button>
+                <div class="preview-output-wrap">
+                    <pre class="preview-output" id="preview-output">Select an agent and platform to preview rendered output.</pre>
                 </div>
             </div>
+        </section>
 
-            <div id="page-agents" class="page">
-                <h2 class="page-title">Agents</h2>
-                <p class="page-subtitle" id="agents-subtitle">Manage your sub-agent definitions.</p>
-                <div class="filter-bar">
-                    <div class="filter-chips" id="category-chips"></div>
-                    <span class="agent-count" id="agent-count"></span>
-                    <button class="m3-btn m3-btn-filled" onclick="showCreateAgent()" style="height:32px;font-size:13px;padding:0 16px;">+ New</button>
-                </div>
-                <div class="agents-grid" id="agents-grid"></div>
-            </div>
-
-            <div id="page-targets" class="page">
-                <h2 class="page-title">Target Configuration</h2>
-                <p class="page-subtitle">Matrix view of agent-to-target mappings. Click a cell to toggle.</p>
-                <div class="matrix-stats" id="matrix-stats">
-                    <div class="matrix-stat-card">
-                        <div class="matrix-stat-value" id="matrix-stat-total">-</div>
-                        <div class="matrix-stat-label">Total Agents</div>
-                    </div>
-                    <div class="matrix-stat-card">
-                        <div class="matrix-stat-value matrix-stat-green" id="matrix-stat-enabled">-</div>
-                        <div class="matrix-stat-label">Enabled</div>
-                    </div>
-                    <div class="matrix-stat-card">
-                        <div class="matrix-stat-value matrix-stat-muted" id="matrix-stat-disabled">-</div>
-                        <div class="matrix-stat-label">Disabled</div>
-                    </div>
-                    <div class="matrix-stat-card">
-                        <div class="matrix-stat-value" id="matrix-stat-platforms">-</div>
-                        <div class="matrix-stat-label">Platforms</div>
-                    </div>
-                </div>
-                <div class="matrix-filter" id="matrix-filter-chips"></div>
-                <div class="target-matrix-wrap" id="target-matrix"></div>
-            </div>
-
-            <div id="page-preview" class="page">
-                <h2 class="page-title">Preview</h2>
-                <p class="page-subtitle">Preview rendered output for a specific target platform.</p>
-                <div class="preview-section">
-                    <div class="preview-controls">
-                        <select class="m3-select" id="preview-agent" aria-label="Select agent">
-                            <option value="">Select agent</option>
-                        </select>
-                        <select class="m3-select" id="preview-target" aria-label="Select target platform">
-                            <option value="">Select target</option>
-                        </select>
-                        <button class="m3-btn m3-btn-filled" onclick="loadPreview()">Preview</button>
-                    </div>
-                    <div class="preview-output-header">
-                        <span class="preview-output-label">Rendered output</span>
-                        <button class="m3-btn m3-btn-text" id="preview-copy-btn" onclick="copyPreview()" style="display:none;font-size:13px;height:32px;padding:0 12px;">Copy</button>
-                    </div>
-                    <div class="preview-output">
-                        <pre id="preview-output"></pre>
-                    </div>
+        <!-- STATUS TAB -->
+        <section id="tab-status" class="tab-panel" role="tabpanel">
+            <div class="status-toolbar">
+                <div class="filter-chips" id="status-chips"></div>
+                <div class="status-actions-bar">
+                    <button class="btn btn-secondary btn-sm" onclick="triggerSync()">Sync All</button>
+                    <button class="btn btn-ghost btn-sm btn-danger-text" onclick="triggerClean()">Clean</button>
                 </div>
             </div>
+            <div class="status-list" id="status-list"></div>
+            <div class="status-empty hidden" id="status-empty">
+                <div class="empty-icon">✓</div>
+                <h3>No generated files</h3>
+                <p>Run Sync to generate platform-specific files from your agents.</p>
+            </div>
+        </section>
+    </main>
 
-            <div id="page-status" class="page">
-                <h2 class="page-title">Sync Status</h2>
-                <p class="page-subtitle">Current state of generated files and symlinks.</p>
-                <div class="status-controls" id="status-controls" style="display:none;">
-                    <div class="status-filter-chips" id="status-filter-chips"></div>
-                    <input type="text" id="status-search" class="status-search-input" placeholder="Filter by agent or platform..." aria-label="Filter symlinks" oninput="filterStatus()">
-                </div>
-                <div class="status-list" id="status-content"></div>
-            </div>
-        </main>
+    <!-- SLIDE-OUT PANEL -->
+    <div class="panel-overlay hidden" id="panel-overlay" onclick="closePanel()"></div>
+    <aside class="panel" id="agent-panel" role="complementary" aria-label="Agent details">
+        <div class="panel-header">
+            <h2 id="panel-title">Agent</h2>
+            <button class="btn-icon" onclick="closePanel()" aria-label="Close panel">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="m5 5 8 8M13 5l-8 8"/></svg>
+            </button>
+        </div>
+        <div class="panel-body" id="panel-body"></div>
+        <div class="panel-footer" id="panel-footer"></div>
+    </aside>
 
-        <aside class="detail-panel" id="detail-panel" role="complementary" aria-label="Agent details">
-            <div class="detail-header">
-                <h3 id="detail-title">Agent</h3>
-                <button class="m3-btn-icon" onclick="closeDetail()" aria-label="Close detail panel">&#10005;</button>
-            </div>
-            <div class="detail-body" id="detail-body"></div>
-            <div class="detail-actions" id="detail-actions">
-                <button class="m3-btn m3-btn-tonal" id="detail-edit-btn">Edit</button>
-                <button class="m3-btn m3-btn-danger" id="detail-delete-btn">Delete</button>
-            </div>
-        </aside>
-    </div>
-
-    <div id="modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <div class="modal-surface">
-            <div class="modal-header">
-                <h3 id="modal-title">Create Agent</h3>
-                <button class="m3-btn-icon" onclick="closeModal()" aria-label="Close dialog">&#10005;</button>
-            </div>
-            <div class="modal-body" id="modal-body"></div>
+    <!-- CONFIRM MODAL -->
+    <div class="modal-overlay hidden" id="modal" role="dialog" aria-modal="true">
+        <div class="modal-box">
+            <h3 id="modal-title"></h3>
+            <p id="modal-body"></p>
             <div class="modal-actions" id="modal-actions"></div>
         </div>
     </div>
 
+    <!-- SNACKBAR -->
     <div class="snackbar" id="snackbar" aria-live="polite"></div>
 
     <script src="/app.js"></script>

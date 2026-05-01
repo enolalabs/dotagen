@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+
+<html lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Deployment Coverage - Agent Designer</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container": "#eceef0",
+                    "primary-container": "#3e4fb2",
+                    "surface-dim": "#d8dadc",
+                    "error-container": "#ffdad6",
+                    "primary-fixed": "#dee0ff",
+                    "primary-fixed-dim": "#bbc3ff",
+                    "tertiary": "#693200",
+                    "secondary-container": "#d0e1fb",
+                    "on-surface": "#191c1e",
+                    "on-background": "#191c1e",
+                    "surface-container-high": "#e6e8ea",
+                    "on-tertiary": "#ffffff",
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "surface-container-highest": "#e0e3e5",
+                    "surface-tint": "#4455b8",
+                    "secondary-fixed": "#d3e4fe",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-fixed-variant": "#713700",
+                    "on-primary": "#ffffff",
+                    "secondary": "#505f76",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "on-secondary-container": "#54647a",
+                    "surface-variant": "#e0e3e5",
+                    "on-surface-variant": "#454652",
+                    "error": "#ba1a1a",
+                    "outline-variant": "#c6c5d4",
+                    "on-primary-fixed": "#000f5d",
+                    "primary": "#243699",
+                    "tertiary-fixed-dim": "#ffb785",
+                    "on-tertiary-fixed": "#301400",
+                    "on-error-container": "#93000a",
+                    "inverse-surface": "#2d3133",
+                    "surface": "#f7f9fb",
+                    "outline": "#757684",
+                    "tertiary-container": "#8c4500",
+                    "surface-bright": "#f7f9fb",
+                    "on-secondary-fixed": "#0b1c30",
+                    "background": "#f7f9fb",
+                    "on-error": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "on-primary-fixed-variant": "#2a3c9f",
+                    "inverse-primary": "#bbc3ff",
+                    "on-primary-container": "#c6ccff",
+                    "surface-container-low": "#f2f4f6",
+                    "tertiary-fixed": "#ffdcc6",
+                    "on-tertiary-container": "#ffc39b",
+                    "inverse-on-surface": "#eff1f3"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "inline-gap": "12px",
+                    "unit": "4px",
+                    "stack-gap": "16px",
+                    "container-padding": "24px",
+                    "section-margin": "40px"
+            },
+            "fontFamily": {
+                    "h2": ["Inter"],
+                    "display": ["Inter"],
+                    "label-caps": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "body-base": ["Inter"],
+                    "h1": ["Inter"]
+            },
+            "fontSize": {
+                    "h2": ["20px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                    "display": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "label-caps": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "body-base": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "h1": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body {
+            background-color: #f7f9fb; /* background color */
+            color: #191c1e; /* on-background color */
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden bg-background font-body-base text-on-background">
+<!-- SideNavBar -->
+<nav class="bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl docked left-0 h-screen w-64 border-r border-slate-200/50 dark:border-slate-800/50 flat no-shadow flex flex-col h-full py-4 gap-2 ease-in-out duration-200 flex-shrink-0 z-10 hidden md:flex">
+<!-- Workspace Header -->
+<div class="px-6 pb-6 pt-2 border-b border-surface-variant mb-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center font-h2 text-h2 font-bold shadow-sm">
+                    MW
+                </div>
+<div>
+<h2 class="font-body-base text-body-base font-semibold text-on-surface">Main Workspace</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Enterprise Tier</p>
+</div>
+</div>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 overflow-y-auto px-3 py-2 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-indigo-600 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="font-body-sm text-body-sm font-medium">Overview</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-indigo-600 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[20px]">smart_toy</span>
+<span class="font-body-sm text-body-sm font-medium">Agent Library</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-indigo-600 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[20px]">precision_manufacturing</span>
+<span class="font-body-sm text-body-sm font-medium">Studio</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/20 border-r-4 border-indigo-600 cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[20px] font-semibold" style="font-variation-settings: 'FILL' 1;">lan</span>
+<span class="font-body-sm text-body-sm font-semibold">Deployment</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-indigo-600 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[20px]">health_and_safety</span>
+<span class="font-body-sm text-body-sm font-medium">Diagnostics</span>
+</a>
+</div>
+<!-- Footer Links & CTA -->
+<div class="px-4 pt-4 border-t border-surface-variant flex flex-col gap-2">
+<button class="w-full py-2 bg-indigo-600 text-white rounded-lg font-body-sm text-body-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                New Agent
+            </button>
+<div class="mt-2 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-2 py-2 rounded-lg text-slate-600 hover:bg-slate-200/50 transition-all" href="#">
+<span class="material-symbols-outlined text-[18px]">menu_book</span>
+<span class="font-body-sm text-body-sm">Docs</span>
+</a>
+<a class="flex items-center gap-3 px-2 py-2 rounded-lg text-slate-600 hover:bg-slate-200/50 transition-all" href="#">
+<span class="material-symbols-outlined text-[18px]">contact_support</span>
+<span class="font-body-sm text-body-sm">Support</span>
+</a>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col h-full overflow-hidden relative">
+<!-- TopNavBar -->
+<header class="bg-white/70 dark:bg-slate-900/70 backdrop-blur-md docked full-width top-0 z-40 border-b border-slate-200/50 dark:border-slate-800/50 shadow-sm flex justify-between items-center w-full px-6 h-16 flex-shrink-0">
+<div class="flex items-center gap-4">
+<button class="md:hidden text-on-surface hover:bg-slate-100 p-2 rounded-lg">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="text-lg font-bold text-slate-900 dark:text-white font-sans text-sm tracking-tight">Agent Designer</div>
+</div>
+<div class="flex-1 flex justify-center px-8 hidden md:flex">
+<!-- Search bar on left -->
+<div class="relative w-full max-w-md ml-0 mr-auto">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-lg font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-on-surface placeholder:text-on-surface-variant" placeholder="Search deployments..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer active:opacity-80 hidden sm:block">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary-container overflow-hidden ml-2 cursor-pointer border border-outline-variant">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A professional headshot of a person looking forward, used as a user profile avatar in a digital interface. Soft, natural lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1N3vi1Y0BWKOLayjxW1IAhV2-WR-NA_jW-TlMtNLbGt6B8c8pcvV_7kpVCRbGpvEbHqPwXzTLsYGH31rKEtY0KDJgCuenlzo-jfTVY9zNl4h3Kg2_Gb-aUAm30uMJSfVjjM8_P5gnbc2cgMdwIZ-3tKTq4rU75dfMKIqBoRcI17yDpJ_VY5qXTn1__TncZgqp_REewegQeVM_FdPVWpONWp78XduBrTwY2uVYpG0aP2wnG_KvOnU7Kwf3llsjyD054Wq8jligQS8"/>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 overflow-y-auto p-container-padding bg-surface">
+<!-- Page Header -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-section-margin">
+<div>
+<h1 class="font-h1 text-h1 text-on-surface">Deployment Coverage</h1>
+<p class="font-body-base text-body-base text-on-surface-variant mt-1">Manage agent assignments across target platforms and destinations.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 bg-surface text-secondary border border-outline-variant rounded-lg font-body-sm text-body-sm font-medium hover:bg-surface-container-low transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">edit_note</span>
+                        Bulk Edit
+                    </button>
+<button class="px-4 py-2 bg-primary text-on-primary rounded-lg font-body-sm text-body-sm font-medium hover:bg-primary-fixed-variant transition-colors shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">sync</span>
+                        Sync All
+                    </button>
+</div>
+</div>
+<!-- Main Content Area: Matrix Layout -->
+<div class="bg-surface-container-lowest rounded-xl border border-surface-variant shadow-sm overflow-hidden flex flex-col">
+<!-- Toolbar -->
+<div class="p-4 border-b border-surface-variant bg-surface-container-low flex flex-wrap gap-4 items-center justify-between">
+<div class="flex gap-2 items-center">
+<span class="font-body-sm text-body-sm font-medium text-on-surface-variant">View:</span>
+<div class="flex bg-surface-container-highest rounded-lg p-1">
+<button class="px-3 py-1 bg-surface-container-lowest rounded-md shadow-sm font-body-sm text-body-sm font-medium text-on-surface">Matrix</button>
+<button class="px-3 py-1 rounded-md font-body-sm text-body-sm font-medium text-on-surface-variant hover:text-on-surface">List</button>
+</div>
+</div>
+<div class="flex gap-3 items-center">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[18px] text-outline">filter_list</span>
+<select class="pl-9 pr-8 py-1.5 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-sm text-body-sm focus:outline-none focus:ring-1 focus:ring-primary text-on-surface appearance-none">
+<option>All Agents</option>
+<option>Customer Support</option>
+<option>Data Analytics</option>
+</select>
+</div>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[18px] text-outline">dns</span>
+<select class="pl-9 pr-8 py-1.5 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-sm text-body-sm focus:outline-none focus:ring-1 focus:ring-primary text-on-surface appearance-none">
+<option>All Destinations</option>
+<option>Production</option>
+<option>Staging</option>
+</select>
+</div>
+</div>
+</div>
+<!-- Matrix Table Container -->
+<div class="overflow-x-auto relative">
+<table class="w-full text-left border-collapse min-w-max">
+<thead>
+<tr>
+<th class="sticky left-0 z-20 bg-surface-container-lowest border-b border-r border-surface-variant p-4 w-64 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Agents \ Destinations</span>
+</th>
+<!-- Destinations Headers -->
+<th class="border-b border-surface-variant p-4 min-w-[160px] text-center align-bottom bg-surface-container-lowest">
+<div class="flex flex-col items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700">
+<span class="material-symbols-outlined text-[18px]">public</span>
+</div>
+<div class="font-body-sm text-body-sm font-medium text-on-surface">Web Portal</div>
+<div class="font-label-caps text-[10px] text-on-surface-variant">Production</div>
+</div>
+</th>
+<th class="border-b border-surface-variant p-4 min-w-[160px] text-center align-bottom bg-surface-container-lowest">
+<div class="flex flex-col items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700">
+<span class="material-symbols-outlined text-[18px]">smartphone</span>
+</div>
+<div class="font-body-sm text-body-sm font-medium text-on-surface">Mobile App</div>
+<div class="font-label-caps text-[10px] text-on-surface-variant">Production</div>
+</div>
+</th>
+<th class="border-b border-surface-variant p-4 min-w-[160px] text-center align-bottom bg-surface-container-lowest">
+<div class="flex flex-col items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700">
+<span class="material-symbols-outlined text-[18px]">api</span>
+</div>
+<div class="font-body-sm text-body-sm font-medium text-on-surface">Internal API</div>
+<div class="font-label-caps text-[10px] text-on-surface-variant">Staging</div>
+</div>
+</th>
+<th class="border-b border-surface-variant p-4 min-w-[160px] text-center align-bottom bg-surface-container-lowest">
+<div class="flex flex-col items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-700">
+<span class="material-symbols-outlined text-[18px]">forum</span>
+</div>
+<div class="font-body-sm text-body-sm font-medium text-on-surface">Slack Bot</div>
+<div class="font-label-caps text-[10px] text-on-surface-variant">Internal</div>
+</div>
+</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-variant">
+<!-- Agent Row 1 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="sticky left-0 z-10 bg-surface-container-lowest group-hover:bg-surface-container-low border-r border-surface-variant p-4 shadow-[2px_0_5px_rgba(0,0,0,0.02)] transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary-container text-on-primary-container flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-[18px]">support_agent</span>
+</div>
+<div>
+<div class="font-body-sm text-body-sm font-semibold text-on-surface leading-tight">Tier 1 Support</div>
+<div class="font-body-sm text-[12px] text-on-surface-variant mt-0.5">v2.4.1 • Active</div>
+</div>
+</div>
+</td>
+<!-- Coverage Cells -->
+<td class="p-4 text-center border-r border-surface-variant/50 border-dashed">
+<div class="flex flex-col items-center justify-center gap-2">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-dim peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="flex items-center gap-1 text-[11px] font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[12px]">check_circle</span> In Sync
+                                        </span>
+</div>
+</td>
+<td class="p-4 text-center border-r border-surface-variant/50 border-dashed bg-surface-container-low/30">
+<div class="flex flex-col items-center justify-center gap-2">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-dim peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="text-[11px] font-medium text-on-surface-variant">Unassigned</span>
+</div>
+</td>
+<td class="p-4 text-center border-r border-surface-variant/50 border-dashed">
+<div class="flex flex-col items-center justify-center gap-2">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-dim peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="flex items-center gap-1 text-[11px] font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full" title="Configuration mismatch detected">
+<span class="material-symbols-outlined text-[12px]">sync_problem</span> Syncing...
+                                        </span>
+</div>
+</td>
+<td class="p-4 text-center">
+<div class="flex flex-col items-center justify-center gap-2">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-dim peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="flex items-center gap-1 text-[11px] font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[12px]">check_circle</span> In Sync
+                                        </span>
+</div>
+</td>
+</tr>
+<!-- Agent Row 2 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="sticky left-0 z-10 bg-surface-container-lowest group-hover:bg-surface-container-low border-r border-surface-variant p-4 shadow-[2px_0_5px_rgba(0,0,0,0.02)] transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-secondary-container text-on-secondary-container flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-[18px]">query_stats</span>
+</div>
+<div>
+<div class="font-body-sm text-body-sm font-semibold text-on-surface leading-tight">Data Analyst</div>
+<div class="font-body-sm text-[12px] text-on-surface-variant mt-0.5">v1.1.0 • Active</div>
+</div>
+</div>
+</td>
+<!-- Coverage Cells -->
+<td class="p-4 text-center border-r border-surface-variant/50 border-dashed bg-surface-container-low/30">
+<div class="flex flex-col items-center justify-center gap-2">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-dim peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="text-[11px] font-medium text-on-surface-variant">Unassigned</span>
+</div>
+</td>
+<td class="p-4 text-center border-r border-surface-variant/50 border-dashed bg-surface-container-low/30">
+<div class="flex flex-col items-center justify-center gap-2">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-dim peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="text-[11px] font-medium text-on-surface-variant">Unassigned</span>
+</div>
+</td>
+<td class="p-4 text-center border-r border-surface-variant/50 border-dashed">
+<div class="flex flex-col items-center justify-center gap-2">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-dim peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="flex items-center gap-1 text-[11px] font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[12px]">check_circle</span> In Sync
+                                        </span>
+</div>
+</td>
+<td class="p-4 text-center">
+<div class="flex flex-col items-center justify-center gap-2">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-dim peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="flex items-center gap-1 text-[11px] font-medium text-error bg-error-container px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[12px]">error</span> Failed
+                                        </span>
+</div>
+</td>
+</tr>
+<!-- Agent Row 3 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="sticky left-0 z-10 bg-surface-container-lowest group-hover:bg-surface-container-low border-r border-surface-variant p-4 shadow-[2px_0_5px_rgba(0,0,0,0.02)] transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-[18px]">shopping_cart</span>
+</div>
+<div>
+<div class="font-body-sm text-body-sm font-semibold text-on-surface leading-tight">Sales Assistant</div>
+<div class="font-body-sm text-[12px] text-on-surface-variant mt-0.5">v3.0.1 • Paused</div>
+</div>
+</div>
+</td>
+<!-- Coverage Cells -->
+<td class="p-4 text-center border-r border-surface-variant/50 border-dashed">
+<div class="flex flex-col items-center justify-center gap-2 opacity-60">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" disabled="" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-dim rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-surface-variant"></div>
+</label>
+<span class="text-[11px] font-medium text-on-surface-variant">Paused</span>
+</div>
+</td>
+<td class="p-4 text-center border-r border-surface-variant/50 border-dashed">
+<div class="flex flex-col items-center justify-center gap-2 opacity-60">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" disabled="" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-dim rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-surface-variant"></div>
+</label>
+<span class="text-[11px] font-medium text-on-surface-variant">Paused</span>
+</div>
+</td>
+<td class="p-4 text-center border-r border-surface-variant/50 border-dashed bg-surface-container-low/30">
+<div class="flex flex-col items-center justify-center gap-2">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-dim peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="text-[11px] font-medium text-on-surface-variant">Unassigned</span>
+</div>
+</td>
+<td class="p-4 text-center bg-surface-container-low/30">
+<div class="flex flex-col items-center justify-center gap-2">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-dim peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="text-[11px] font-medium text-on-surface-variant">Unassigned</span>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination/Footer -->
+<div class="p-4 border-t border-surface-variant bg-surface-container-lowest flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+<div>Showing 3 of 12 Agents</div>
+<div class="flex gap-2">
+<button class="px-3 py-1 border border-outline-variant rounded hover:bg-surface-container-low disabled:opacity-50" disabled="">Previous</button>
+<button class="px-3 py-1 border border-outline-variant rounded hover:bg-surface-container-low">Next</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
