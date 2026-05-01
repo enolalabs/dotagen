@@ -416,6 +416,7 @@ async function deleteAgent(name) {
 
 let targetFilter = 'all';
 let targetConfig = null;
+let allPlatforms = [];
 
 const PLATFORM_ICONS = {
     'claude-code': '\u{1F4AC}',
@@ -424,36 +425,37 @@ const PLATFORM_ICONS = {
     'opencode': '\u{26A1}',
 };
 
-function resolveAgentTargets(agentEntry, allTargets) {
+function resolveAgentTargets(agentEntry, platforms) {
     if (!agentEntry || agentEntry.disabled) return [];
     const t = agentEntry.targets || [];
-    if (t.length === 1 && t[0] === 'all') return [...allTargets];
+    if (t.length === 1 && t[0] === 'all') return [...platforms];
     return t;
 }
 
 async function loadTargets() {
     try {
-        const [config, agents] = await Promise.all([
+        const [config, agents, validResp] = await Promise.all([
             api('/api/config'),
             api('/api/agents'),
+            api('/api/targets'),
         ]);
         targetConfig = config;
-        const targets = config.targets || [];
+        allPlatforms = validResp.targets || [];
         const agentList = agents || [];
         const agentMap = config.agents || {};
 
         const enabled = agentList.filter(a => {
             const entry = agentMap[a.name];
-            return entry && resolveAgentTargets(entry, targets).length > 0;
+            return entry && resolveAgentTargets(entry, allPlatforms).length > 0;
         }).length;
 
         document.getElementById('matrix-stat-total').textContent = agentList.length;
         document.getElementById('matrix-stat-enabled').textContent = enabled;
         document.getElementById('matrix-stat-disabled').textContent = agentList.length - enabled;
-        document.getElementById('matrix-stat-platforms').textContent = targets.length;
+        document.getElementById('matrix-stat-platforms').textContent = allPlatforms.length;
 
         renderTargetFilterChips(enabled, agentList.length - enabled);
-        renderTargetMatrix(agentList, targets, agentMap);
+        renderTargetMatrix(agentList, allPlatforms, agentMap);
     } catch (e) {
         console.error(e);
     }
@@ -551,7 +553,7 @@ async function toggleAgentTarget(agentName, targetName) {
         let current = entry.targets || [];
 
         if (current.length === 1 && current[0] === 'all') {
-            current = targets.filter(t => t !== targetName);
+            current = allPlatforms.filter(t => t !== targetName);
             if (current.length === 0) current = [];
         } else {
             const idx = current.indexOf(targetName);
@@ -563,7 +565,7 @@ async function toggleAgentTarget(agentName, targetName) {
         }
 
         entry.targets = current;
-        if (current.length === targets.length) {
+        if (current.length === allPlatforms.length) {
             entry.targets = ['all'];
         }
     }

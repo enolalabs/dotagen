@@ -45,7 +45,7 @@ func TestCursorAdapter(t *testing.T) {
 	assert.Contains(t, out, "alwaysApply: true")
 	assert.Contains(t, out, "# My Agent")
 	assert.Equal(t, "cursor/test.mdc", a.OutputPath("test"))
-	assert.Equal(t, ".cursor/rules/test.mdc", a.SymlinkPath("test"))
+	assert.Equal(t, ".cursor/agents/test.mdc", a.SymlinkPath("test"))
 }
 
 func TestCursorAdapterWithDescription(t *testing.T) {
@@ -84,5 +84,5 @@ func TestOpenCodeAdapter(t *testing.T) {
 	assert.Contains(t, out, "mode: subagent")
 	assert.Contains(t, out, "# My Agent")
 	assert.Equal(t, "opencode/test.md", a.OutputPath("test"))
-	assert.Equal(t, ".opencode/agents/test.md", a.SymlinkPath("test"))
+	assert.Equal(t, ".config/opencode/agents/test.md", a.SymlinkPath("test"))
 }

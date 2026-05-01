@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/enolalabs/dotagen/v2/internal/agent"
+	"github.com/enolalabs/dotagen/v2/internal/config"
 	"gopkg.in/yaml.v3"
 )
 
@@ -58,9 +59,9 @@ func (a *OpenCodeAdapter) OutputPath(agentName string) string {
 }
 
 func (a *OpenCodeAdapter) SymlinkPath(agentName string) string {
-	return filepath.Join(".opencode", "agents", agentName+".md")
+	return filepath.Join(config.OPEN_CODE_ROOT_PATH, agentName+".md")
 }
 
 func (a *OpenCodeAdapter) EnsureDirectories(projectDir string) error {
-	return os.MkdirAll(filepath.Join(projectDir, ".opencode", "agents"), 0o755)
+	return os.MkdirAll(filepath.Join(projectDir, config.OPEN_CODE_ROOT_PATH), 0o755)
 }

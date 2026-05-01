@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/enolalabs/dotagen/v2/internal/agent"
+	"github.com/enolalabs/dotagen/v2/internal/config"
 	"gopkg.in/yaml.v3"
 )
 
@@ -59,9 +60,9 @@ func (a *CursorAdapter) OutputPath(agentName string) string {
 }
 
 func (a *CursorAdapter) SymlinkPath(agentName string) string {
-	return filepath.Join(".cursor", "rules", agentName+".mdc")
+	return filepath.Join(config.CURSOR_ROOT_PATH, agentName+".mdc")
 }
 
 func (a *CursorAdapter) EnsureDirectories(projectDir string) error {
-	return os.MkdirAll(filepath.Join(projectDir, ".cursor", "rules"), 0o755)
+	return os.MkdirAll(filepath.Join(projectDir, config.CURSOR_ROOT_PATH), 0o755)
 }
