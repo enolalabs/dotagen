@@ -9,13 +9,14 @@ import (
 	"github.com/enolalabs/dotagen/v2/internal/agent"
 	"github.com/enolalabs/dotagen/v2/internal/config"
 	"github.com/enolalabs/dotagen/v2/internal/platform"
+	"github.com/enolalabs/dotagen/v2/internal/skill"
 	"github.com/spf13/cobra"
 )
 
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Show sync status of all agents and targets",
-	Long:  "Display the current status of each agent for each target: synced, out-of-date, missing, or not targeted.",
+	Short: "Show sync status of all agents and skills",
+	Long:  "Display the current status of each agent and skill for each target: synced, out-of-date, missing, or not targeted.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dotgenDir, err := config.FindDotgenDir()
 		if err != nil {
@@ -89,6 +90,53 @@ var statusCmd = &cobra.Command{
 			fmt.Println()
 		}
 
+		// Skills status
+		skillsDir := filepath.Join(dotgenDir, "skills")
+		skills, err := skill.ParseSkillsDir(skillsDir)
+		if err != nil {
+			fmt.Printf("  ⚠ Failed to parse skills: %v\n", err)
+		}
+
+		if len(skills) > 0 {
+			fmt.Printf("Skills: %d defined\n\n", len(skills))
+			for _, sk := range skills {
+				fmt.Printf("  %s:\n", sk.Name)
+				for _, target := range cfg.Targets {
+					resolved := cfg.ResolveSkillTargets(sk.Name)
+					targeted := false
+					for _, t := range resolved {
+						if t == target {
+							targeted = true
+							break
+						}
+					}
+
+					if !targeted {
+						fmt.Printf("    ✗ %-12s (not targeted)\n", target)
+						continue
+					}
+
+					sa, err := registry.GetSkillAdapter(target)
+					if err != nil {
+						fmt.Printf("    ⚠ %-12s (no skill support)\n", target)
+						continue
+					}
+
+					symlinkDir := filepath.Join(projectDir, sa.SkillSymlinkDir(sk.Name))
+					status := checkSkillStatus(symlinkDir)
+					switch status {
+					case "synced":
+						fmt.Printf("    ✓ %-12s (synced)\n", target)
+					case "missing":
+						fmt.Printf("    ✗ %-12s (missing)\n", target)
+					case "broken":
+						fmt.Printf("    💔 %-11s (broken symlink)\n", target)
+					}
+				}
+				fmt.Println()
+			}
+		}
+
 		return nil
 	},
 }
@@ -139,4 +187,37 @@ func checkStatus(ag agent.Agent, target string, adapter platform.Adapter, symlin
 
 func init() {
 	rootCmd.AddCommand(statusCmd)
+}
+
+func checkSkillStatus(symlinkDir string) string {
+	info, err := os.Lstat(symlinkDir)
+	if err != nil {
+		return "missing"
+	}
+
+	if info.Mode()&os.ModeSymlink == 0 {
+		// Not a symlink — check if it's a directory with SKILL.md
+		skillFile := filepath.Join(symlinkDir, "SKILL.md")
+		if _, err := os.Stat(skillFile); err == nil {
+			return "synced"
+		}
+		return "missing"
+	}
+
+	linkTarget, err := os.Readlink(symlinkDir)
+	if err != nil {
+		return "broken"
+	}
+
+	resolvedTarget := linkTarget
+	if !filepath.IsAbs(resolvedTarget) {
+		resolvedTarget = filepath.Join(filepath.Dir(symlinkDir), resolvedTarget)
+	}
+
+	skillFile := filepath.Join(resolvedTarget, "SKILL.md")
+	if _, err := os.Stat(skillFile); err != nil {
+		return "broken"
+	}
+
+	return "synced"
 }

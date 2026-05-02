@@ -53,6 +53,9 @@ var initCmd = &cobra.Command{
 			if err := os.RemoveAll(filepath.Join(dotgenDir, "agents")); err != nil {
 				return fmt.Errorf("failed to remove agents directory: %w", err)
 			}
+			if err := os.RemoveAll(filepath.Join(dotgenDir, "skills")); err != nil {
+				return fmt.Errorf("failed to remove skills directory: %w", err)
+			}
 			if err := os.Remove(filepath.Join(dotgenDir, "config.yaml")); err != nil && !os.IsNotExist(err) {
 				return fmt.Errorf("failed to remove config.yaml: %w", err)
 			}
@@ -60,6 +63,7 @@ var initCmd = &cobra.Command{
 
 		dirs := []string{
 			filepath.Join(dotgenDir, "agents"),
+			filepath.Join(dotgenDir, "skills"),
 			filepath.Join(dotgenDir, ".generated"),
 		}
 		for _, dir := range dirs {
@@ -80,8 +84,27 @@ var initCmd = &cobra.Command{
 			}
 		}
 
+		// Copy builtin skills
+		skillNames := builtin.ListSkills()
+		for _, name := range skillNames {
+			files := builtin.ListSkillFiles(name)
+			for _, file := range files {
+				data, err := builtin.ReadSkillFile(name + "/" + file)
+				if err != nil {
+					return fmt.Errorf("failed to read built-in skill %s/%s: %w", name, file, err)
+				}
+				outPath := filepath.Join(dotgenDir, "skills", name, file)
+				if err := os.MkdirAll(filepath.Dir(outPath), 0o755); err != nil {
+					return fmt.Errorf("failed to create skill directory: %w", err)
+				}
+				if err := os.WriteFile(outPath, data, 0o644); err != nil {
+					return fmt.Errorf("failed to write skill file %s: %w", outPath, err)
+				}
+			}
+		}
+
 		detected := config.DetectPlatforms(home)
-		configContent := buildDefaultConfig(agentNames, detected)
+		configContent := buildDefaultConfig(agentNames, skillNames, detected)
 		if err := os.WriteFile(filepath.Join(dotgenDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
 			return err
 		}
@@ -91,7 +114,7 @@ var initCmd = &cobra.Command{
 			return err
 		}
 
-		fmt.Printf("✓ Created ~/.dotagen/ with %d built-in agents\n\n", len(agentNames))
+		fmt.Printf("✓ Created ~/.dotagen/ with %d built-in agents and %d built-in skills\n\n", len(agentNames), len(skillNames))
 		fmt.Printf("  Location: %s\n\n", dotgenDir)
 		fmt.Println("  Detected platforms:")
 		if len(detected) > 0 {
@@ -115,12 +138,12 @@ var initCmd = &cobra.Command{
 	},
 }
 
-func buildDefaultConfig(agentNames []string, detectedPlatforms []string) string {
+func buildDefaultConfig(agentNames []string, skillNames []string, detectedPlatforms []string) string {
 	var sb strings.Builder
 	sb.WriteString("# dotagen configuration\n")
 	sb.WriteString("# Docs: https://github.com/enolalabs/dotagen\n")
 	sb.WriteString("#\n")
-	sb.WriteString("# All agents are listed with empty targets (disabled).\n")
+	sb.WriteString("# All agents and skills are listed with empty targets (disabled).\n")
 	sb.WriteString("# Set targets to enable them. Examples:\n")
 	sb.WriteString("#   targets: all                    — all platforms\n")
 	sb.WriteString("#   targets: [claude-code, cursor]  — specific platforms\n")
@@ -144,11 +167,16 @@ func buildDefaultConfig(agentNames []string, detectedPlatforms []string) string 
 		}
 	}
 
-	sb.WriteString("\n")
-	sb.WriteString("agents:\n")
+	sb.WriteString("\nagents:\n")
 	for _, name := range agentNames {
 		sb.WriteString(fmt.Sprintf("  %s:\n    targets: []\n", name))
 	}
+
+	sb.WriteString("\nskills:\n")
+	for _, name := range skillNames {
+		sb.WriteString(fmt.Sprintf("  %s:\n    targets: []\n", name))
+	}
+
 	return sb.String()
 }
 

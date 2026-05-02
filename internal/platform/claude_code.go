@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/enolalabs/dotagen/v2/internal/agent"
+	"github.com/enolalabs/dotagen/v2/internal/config"
+	"github.com/enolalabs/dotagen/v2/internal/skill"
 )
 
 type ClaudeCodeAdapter struct{}
@@ -44,4 +46,29 @@ func (a *ClaudeCodeAdapter) SymlinkPath(agentName string) string {
 
 func (a *ClaudeCodeAdapter) EnsureDirectories(projectDir string) error {
 	return os.MkdirAll(filepath.Join(projectDir, ".claude", "agents"), 0o755)
+}
+
+func (a *ClaudeCodeAdapter) RenderSkill(sk skill.Skill) (string, error) {
+	var sb strings.Builder
+	sb.WriteString("---\n")
+	name := strings.TrimPrefix(sk.Name, "ds-")
+	sb.WriteString(fmt.Sprintf("name: %s\n", name))
+	if desc, ok := sk.Frontmatter["description"]; ok && desc != "" {
+		sb.WriteString(fmt.Sprintf("description: %s\n", desc))
+	}
+	sb.WriteString("---\n\n")
+	sb.WriteString(sk.Content)
+	return sb.String(), nil
+}
+
+func (a *ClaudeCodeAdapter) SkillOutputDir(skillName string) string {
+	return filepath.Join("claude-code", "skills", skillName)
+}
+
+func (a *ClaudeCodeAdapter) SkillSymlinkDir(skillName string) string {
+	return filepath.Join(config.ClaudeCodeSkillPath, skillName)
+}
+
+func (a *ClaudeCodeAdapter) EnsureSkillDirectories(projectDir string) error {
+	return os.MkdirAll(filepath.Join(projectDir, config.ClaudeCodeSkillPath), 0o755)
 }

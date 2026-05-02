@@ -8,13 +8,14 @@ import (
 	"github.com/enolalabs/dotagen/v2/internal/config"
 	"github.com/enolalabs/dotagen/v2/internal/engine"
 	"github.com/enolalabs/dotagen/v2/internal/platform"
+	"github.com/enolalabs/dotagen/v2/internal/skill"
 	"github.com/spf13/cobra"
 )
 
 var syncCmd = &cobra.Command{
 	Use:   "sync [target]",
-	Short: "Sync agents to target platforms",
-	Long:  "Render all agents and create symlinks. Optionally specify a single target (claude-code, cursor, gemini-cli, opencode).",
+	Short: "Sync agents and skills to target platforms",
+	Long:  "Render all agents and skills, then create symlinks. Optionally specify a single target (claude-code, cursor, gemini-cli, opencode).",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dotgenDir, err := config.FindDotgenDir()
@@ -60,6 +61,7 @@ var syncCmd = &cobra.Command{
 		filteredCfg := &config.Config{
 			Targets: syncTargets,
 			Agents:  make(map[string]config.AgentConfig),
+			Skills:  make(map[string]config.SkillConfig),
 		}
 		for name, ac := range cfg.Agents {
 			resolved := cfg.ResolveTargets(name)
@@ -73,6 +75,20 @@ var syncCmd = &cobra.Command{
 			}
 			if len(filtered) > 0 {
 				filteredCfg.Agents[name] = config.AgentConfig{Targets: filtered, Disabled: ac.Disabled}
+			}
+		}
+		for name, sc := range cfg.Skills {
+			resolved := cfg.ResolveSkillTargets(name)
+			var filtered config.StringOrSlice
+			for _, t := range resolved {
+				for _, st := range syncTargets {
+					if t == st {
+						filtered = append(filtered, t)
+					}
+				}
+			}
+			if len(filtered) > 0 {
+				filteredCfg.Skills[name] = config.SkillConfig{Targets: filtered, Disabled: sc.Disabled}
 			}
 		}
 
@@ -102,14 +118,45 @@ var syncCmd = &cobra.Command{
 
 		removed, err := engine.RemoveStaleSymlinks(projectDir, dotgenDir, agentNames, syncTargets)
 		if err != nil {
-			fmt.Printf("  ⚠ Failed to clean stale symlinks: %v\n", err)
+			fmt.Printf("  ⚠ Failed to clean stale agent symlinks: %v\n", err)
 		}
 
-		fmt.Printf("✓ Synced %d agent(s) to %d platform(s)\n\n", len(results), len(syncTargets))
+		// Parse and render skills
+		skillsDir := filepath.Join(dotgenDir, "skills")
+		skills, err := skill.ParseSkillsDir(skillsDir)
+		if err != nil {
+			fmt.Printf("  ⚠ Failed to parse skills: %v\n", err)
+			skills = nil
+		}
+
+		var skillResults []engine.SkillRenderResult
+		if len(skills) > 0 {
+			skillResults, err = renderer.RenderAllSkills(skills, filteredCfg, dotgenDir, projectDir)
+			if err != nil {
+				fmt.Printf("  ⚠ Failed to render skills: %v\n", err)
+			}
+		}
+
+		var skillNames []string
+		for _, sk := range skills {
+			skillNames = append(skillNames, sk.Name)
+		}
+		removedSkills, err := engine.RemoveStaleSkillSymlinks(projectDir, dotgenDir, skillNames, syncTargets)
+		if err != nil {
+			fmt.Printf("  ⚠ Failed to clean stale skill symlinks: %v\n", err)
+		}
+
+		totalSynced := len(results) + len(skillResults)
+		fmt.Printf("✓ Synced %d agent(s) and %d skill(s) to %d platform(s)\n\n", len(results), len(skillResults), len(syncTargets))
 
 		grouped := make(map[string][]engine.RenderResult)
 		for _, r := range results {
 			grouped[r.Target] = append(grouped[r.Target], r)
+		}
+
+		groupedSkills := make(map[string][]engine.SkillRenderResult)
+		for _, r := range skillResults {
+			groupedSkills[r.Target] = append(groupedSkills[r.Target], r)
 		}
 
 		for _, target := range syncTargets {
@@ -119,16 +166,24 @@ var syncCmd = &cobra.Command{
 				relGenerated, _ := filepath.Rel(projectDir, r.GeneratedPath)
 				fmt.Printf("    ✓ %s → %s\n", relSymlink, relGenerated)
 			}
+			for _, r := range groupedSkills[target] {
+				relSymlink, _ := filepath.Rel(projectDir, r.SymlinkPath)
+				relGenerated, _ := filepath.Rel(projectDir, r.GeneratedPath)
+				fmt.Printf("    ✓ %s → %s\n", relSymlink, relGenerated)
+			}
 			fmt.Println()
 		}
 
-		if len(removed) > 0 {
+		allRemoved := append(removed, removedSkills...)
+		if len(allRemoved) > 0 {
 			fmt.Println("  Removed stale symlinks:")
-			for _, r := range removed {
+			for _, r := range allRemoved {
 				fmt.Printf("    ✗ %s\n", r)
 			}
 			fmt.Println()
 		}
+
+		_ = totalSynced
 
 		return nil
 	},

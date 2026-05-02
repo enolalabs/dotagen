@@ -27,6 +27,19 @@ func (r *Registry) Get(name string) (Adapter, error) {
 	return a, nil
 }
 
+// GetSkillAdapter returns the SkillAdapter for a platform, if it implements one.
+func (r *Registry) GetSkillAdapter(name string) (SkillAdapter, error) {
+	a, ok := r.adapters[name]
+	if !ok {
+		return nil, fmt.Errorf("unknown platform: %s", name)
+	}
+	sa, ok := a.(SkillAdapter)
+	if !ok {
+		return nil, fmt.Errorf("platform %s does not support skills", name)
+	}
+	return sa, nil
+}
+
 func (r *Registry) List() []string {
 	names := make([]string, 0, len(r.adapters))
 	for name := range r.adapters {

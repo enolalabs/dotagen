@@ -14,6 +14,11 @@ const CursorRootPath = ".cursor/agents"
 const GeminiCliRootPath = ".gemini/agents"
 const OpenCodeRootPath = ".config/opencode/agents"
 
+const ClaudeCodeSkillPath = ".claude/skills"
+const CursorSkillPath = ".cursor/skills"
+const GeminiCliSkillPath = ".gemini/skills"
+const OpenCodeSkillPath = ".opencode/skills"
+
 var ValidTargets = []string{"claude-code", "cursor", "gemini-cli", "opencode"}
 
 type StringOrSlice []string
@@ -39,9 +44,15 @@ type AgentConfig struct {
 	Disabled bool          `yaml:"disabled" json:"disabled"`
 }
 
+type SkillConfig struct {
+	Targets  StringOrSlice `yaml:"targets" json:"targets"`
+	Disabled bool          `yaml:"disabled" json:"disabled"`
+}
+
 type Config struct {
-	Targets []string               `yaml:"targets" json:"targets"`
-	Agents  map[string]AgentConfig `yaml:"agents" json:"agents"`
+	Targets []string                `yaml:"targets" json:"targets"`
+	Agents  map[string]AgentConfig  `yaml:"agents" json:"agents"`
+	Skills  map[string]SkillConfig  `yaml:"skills,omitempty" json:"skills,omitempty"`
 }
 
 func LoadConfig(dotgenDir string) (*Config, error) {
@@ -99,11 +110,36 @@ func (c *Config) ResolveTargets(agentName string) []string {
 	return agent.Targets
 }
 
+func (c *Config) ResolveSkillTargets(skillName string) []string {
+	sk, ok := c.Skills[skillName]
+	if !ok {
+		return nil
+	}
+	if sk.Disabled {
+		return nil
+	}
+	if len(sk.Targets) == 1 && sk.Targets[0] == "all" {
+		return c.Targets
+	}
+	return sk.Targets
+}
+
 func (c *Config) AddAgent(name string, targets []string) {
 	if len(targets) == 1 && targets[0] == "all" {
 		c.Agents[name] = AgentConfig{Targets: StringOrSlice{"all"}}
 	} else {
 		c.Agents[name] = AgentConfig{Targets: StringOrSlice(targets)}
+	}
+}
+
+func (c *Config) AddSkill(name string, targets []string) {
+	if c.Skills == nil {
+		c.Skills = make(map[string]SkillConfig)
+	}
+	if len(targets) == 1 && targets[0] == "all" {
+		c.Skills[name] = SkillConfig{Targets: StringOrSlice{"all"}}
+	} else {
+		c.Skills[name] = SkillConfig{Targets: StringOrSlice(targets)}
 	}
 }
 
@@ -134,6 +170,29 @@ func RemoveAgentFromConfig(dotgenDir string, name string) error {
 		return err
 	}
 	delete(cfg.Agents, name)
+	return SaveConfig(dotgenDir, cfg)
+}
+
+func AddSkillToConfig(dotgenDir string, name string, targets []string) error {
+	cfg, err := LoadConfig(dotgenDir)
+	if err != nil {
+		return err
+	}
+	cfg.AddSkill(name, targets)
+	if err := cfg.Validate(); err != nil {
+		return err
+	}
+	return SaveConfig(dotgenDir, cfg)
+}
+
+func RemoveSkillFromConfig(dotgenDir string, name string) error {
+	cfg, err := LoadConfig(dotgenDir)
+	if err != nil {
+		return err
+	}
+	if cfg.Skills != nil {
+		delete(cfg.Skills, name)
+	}
 	return SaveConfig(dotgenDir, cfg)
 }
 

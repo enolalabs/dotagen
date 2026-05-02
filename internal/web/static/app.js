@@ -4,16 +4,19 @@
 
 // ── State ──
 let agents = [];
-let config = { targets: [], agents: {} };
+let skills = [];
+let config = { targets: [], agents: {}, skills: {} };
 let knownTargets = [];
 let statusLinks = [];
 let currentTab = 'agents';
 let searchQuery = '';
 let categoryFilter = 'all';
+let skillCategoryFilter = 'all';
 let statusFilter = 'all';
-let panelMode = null; // null | 'view' | 'create' | 'edit'
+let panelMode = null;
 let panelAgent = null;
 let selectedAgents = new Set();
+let selectedSkills = new Set();
 
 const PLATFORM_LABELS = {
     'claude-code': 'Claude',
@@ -89,6 +92,115 @@ function resolveTargets(entry, platforms) {
     return t;
 }
 
+// ═══════════════════════════════════
+// CATEGORY DROPDOWN COMPONENT
+// ═══════════════════════════════════
+let _catDropdownState = { selected: new Set(), allCats: [], containerId: '', inputName: '' };
+
+function renderCategoryDropdown(containerId, allCats, selectedCats, inputName) {
+    _catDropdownState = { selected: new Set(selectedCats), allCats: [...new Set([...allCats, ...selectedCats])].sort(), containerId, inputName };
+    _rebuildDropdown();
+}
+
+function _rebuildDropdown() {
+    const { selected, allCats, containerId } = _catDropdownState;
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const tags = [...selected].map(c =>
+        `<span class="cat-tag">${esc(catLabel(c))}<span class="cat-tag-x" data-cat="${esc(c)}">&times;</span></span>`
+    ).join('');
+    const placeholder = selected.size === 0 ? '<span class="cat-dropdown-placeholder">Select categories…</span>' : '';
+
+    const items = allCats.map(c => {
+        const sel = selected.has(c) ? 'selected' : '';
+        return `<div class="cat-dropdown-item ${sel}" data-cat="${esc(c)}"><span class="cat-check">${sel ? '✓' : ''}</span>${esc(catLabel(c))}</div>`;
+    }).join('');
+
+    // Hidden inputs for form data
+    const hiddenInputs = [...selected].map(c =>
+        `<input type="hidden" name="${_catDropdownState.inputName}" value="${esc(c)}">`
+    ).join('');
+
+    container.innerHTML = `
+        <div class="cat-dropdown-trigger" id="${containerId}-trigger">
+            ${tags}${placeholder}
+            <span class="cat-dropdown-arrow">▾</span>
+        </div>
+        <div class="cat-dropdown-menu" id="${containerId}-menu">
+            ${items || '<div style="padding:8px 10px;font-size:12px;color:var(--text-muted)">No categories yet</div>'}
+            <div class="cat-dropdown-add">
+                <input id="${containerId}-new" placeholder="New category…" onclick="event.stopPropagation()">
+                <button type="button" onclick="event.stopPropagation();_catDropdownAddNew('${containerId}')">Add</button>
+            </div>
+        </div>
+        ${hiddenInputs}`;
+
+    // Trigger click
+    document.getElementById(`${containerId}-trigger`).onclick = (e) => {
+        if (e.target.classList.contains('cat-tag-x')) {
+            e.stopPropagation();
+            _catDropdownToggle(e.target.dataset.cat);
+            return;
+        }
+        const menu = document.getElementById(`${containerId}-menu`);
+        const trigger = document.getElementById(`${containerId}-trigger`);
+        const isOpen = menu.classList.contains('open');
+        menu.classList.toggle('open', !isOpen);
+        trigger.classList.toggle('open', !isOpen);
+    };
+
+    // Item clicks
+    container.querySelectorAll('.cat-dropdown-item').forEach(item => {
+        item.onclick = (e) => {
+            e.stopPropagation();
+            _catDropdownToggle(item.dataset.cat);
+        };
+    });
+
+    // Enter key in new input
+    const newInput = document.getElementById(`${containerId}-new`);
+    if (newInput) {
+        newInput.onkeydown = (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); _catDropdownAddNew(containerId); }
+        };
+    }
+}
+
+function _catDropdownToggle(cat) {
+    if (_catDropdownState.selected.has(cat)) _catDropdownState.selected.delete(cat);
+    else _catDropdownState.selected.add(cat);
+    _rebuildDropdown();
+}
+
+function _catDropdownAddNew(containerId) {
+    const input = document.getElementById(`${containerId}-new`);
+    if (!input) return;
+    const val = input.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    if (!val) return;
+    if (!_catDropdownState.allCats.includes(val)) {
+        _catDropdownState.allCats.push(val);
+        _catDropdownState.allCats.sort();
+    }
+    _catDropdownState.selected.add(val);
+    _rebuildDropdown();
+}
+
+function getCategoryDropdownValues() {
+    return [..._catDropdownState.selected];
+}
+
+// Close dropdown on outside click
+document.addEventListener('click', (e) => {
+    const dropdown = e.target.closest('.cat-dropdown');
+    document.querySelectorAll('.cat-dropdown-menu.open').forEach(menu => {
+        if (!dropdown || !dropdown.contains(menu)) {
+            menu.classList.remove('open');
+            menu.previousElementSibling?.classList.remove('open');
+        }
+    });
+});
+
 function showSnackbar(msg, ms = 3000) {
     const el = document.getElementById('snackbar');
     el.textContent = msg;
@@ -122,6 +234,7 @@ function switchTab(tab) {
         p.classList.toggle('active', p.id === 'tab-' + tab);
     });
     if (tab === 'agents') loadAgents();
+    else if (tab === 'skills') loadSkills();
     else if (tab === 'preview') loadPreviewOptions();
     else if (tab === 'status') loadStatus();
 }
@@ -133,14 +246,17 @@ document.querySelectorAll('.tab').forEach(t => {
 // ── Data loading ──
 async function loadAll() {
     try {
-        const [a, c, t, s] = await Promise.all([
+        const [a, c, t, s, sk] = await Promise.all([
             api('/api/agents'),
             api('/api/config'),
             api('/api/targets'),
             api('/api/status'),
+            api('/api/skills').catch(() => []),
         ]);
         agents = a || [];
-        config = c || { targets: [], agents: {} };
+        skills = sk || [];
+        config = c || { targets: [], agents: {}, skills: {} };
+        if (!config.skills) config.skills = {};
         knownTargets = (t && t.targets) || config.targets || [];
         statusLinks = (s && s.symlinks) || [];
         updateBadges();
@@ -151,6 +267,7 @@ async function loadAll() {
 
 function updateBadges() {
     document.getElementById('badge-agents').textContent = agents.length;
+    document.getElementById('badge-skills').textContent = skills.length;
     const broken = statusLinks.filter(l => l.broken).length;
     const badge = document.getElementById('badge-status');
     if (broken > 0) {
@@ -506,15 +623,6 @@ async function editAgent(name) {
 }
 
 function renderAgentForm({ name, description, categories = [], content, targets, isEdit = false }) {
-    const existingCats = allCategories();
-    const catChips = existingCats.map(c => {
-        const checked = categories.includes(c);
-        return `<label class="target-chip ${checked ? 'checked' : ''}" onclick="this.classList.toggle('checked')">
-            <input type="checkbox" name="form-category" value="${esc(c)}" ${checked ? 'checked' : ''}>
-            ${esc(catLabel(c))}
-        </label>`;
-    }).join('');
-
     const targetChips = knownTargets.map(t => {
         const checked = targets.includes(t);
         return `<label class="target-chip ${checked ? 'checked' : ''}" onclick="this.classList.toggle('checked')">
@@ -535,12 +643,7 @@ function renderAgentForm({ name, description, categories = [], content, targets,
         </div>
         <div class="form-group">
             <label class="form-label">Categories</label>
-            <div class="form-targets">${catChips}</div>
-            <div style="display:flex;gap:6px;margin-top:8px">
-                <input class="form-input" id="form-new-cat" placeholder="New category…" style="flex:1">
-                <button class="btn btn-secondary btn-sm" type="button" onclick="addCustomCategory()">Add</button>
-            </div>
-            <div class="form-hint">Select existing or type a new category name</div>
+            <div class="cat-dropdown" id="agent-cat-dropdown"></div>
         </div>
         <div class="form-group">
             <label class="form-label">Platforms</label>
@@ -551,35 +654,13 @@ function renderAgentForm({ name, description, categories = [], content, targets,
             <textarea class="form-textarea" id="form-content" placeholder="# Agent Name\n\n## Role\n\nDescribe what this agent does…">${esc(content)}</textarea>
         </div>
     `;
-}
-
-function addCustomCategory() {
-    const input = document.getElementById('form-new-cat');
-    const val = input.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
-    if (!val) return;
-    // Check if already exists
-    const existing = document.querySelector(`input[name="form-category"][value="${val}"]`);
-    if (existing) {
-        existing.checked = true;
-        existing.closest('.target-chip').classList.add('checked');
-        input.value = '';
-        return;
-    }
-    // Add new chip
-    const container = input.closest('.form-group').querySelector('.form-targets');
-    const chip = document.createElement('label');
-    chip.className = 'target-chip checked';
-    chip.onclick = function() { this.classList.toggle('checked'); };
-    chip.innerHTML = `<input type="checkbox" name="form-category" value="${esc(val)}" checked> ${esc(val)}`;
-    container.appendChild(chip);
-    input.value = '';
+    renderCategoryDropdown('agent-cat-dropdown', allCategories(), categories, 'form-category');
 }
 
 function getFormData() {
     const name = document.getElementById('form-name').value.trim();
     const description = document.getElementById('form-desc').value.trim();
-    const catChecks = document.querySelectorAll('input[name="form-category"]:checked');
-    const category = Array.from(catChecks).map(c => c.value).join(',');
+    const category = getCategoryDropdownValues().join(',');
     const content = document.getElementById('form-content').value;
     const checks = document.querySelectorAll('input[name="form-target"]:checked');
     const targets = Array.from(checks).map(c => c.value);
@@ -656,6 +737,238 @@ async function deleteAgent(name) {
     } catch (e) {
         showSnackbar('Delete failed: ' + e.message, 5000);
     }
+}
+
+// ═══════════════════════════════════
+// SKILLS TAB
+// ═══════════════════════════════════
+function skillCategories(s) {
+    return (s.categories && s.categories.length) ? s.categories : (s.category ? s.category.split(',').map(c => c.trim()).filter(Boolean) : []);
+}
+function allSkillCategories() {
+    const s = new Set();
+    skills.forEach(sk => skillCategories(sk).forEach(c => s.add(c)));
+    return [...s].sort();
+}
+
+async function loadSkills() {
+    await loadAll();
+    renderSkillCategoryChips();
+    renderSkillsTable();
+    renderSkillPlatformHeaders();
+}
+
+function renderSkillPlatformHeaders() {
+    const th = document.getElementById('skill-platforms-header');
+    if (!th || knownTargets.length === 0) return;
+    th.innerHTML = knownTargets.map(t =>
+        `<span title="${esc(PLATFORM_NAMES[t] || t)}" style="display:inline-block;padding:0 4px;font-size:11px">${esc(PLATFORM_LABELS[t] || t)}</span>`
+    ).join('');
+}
+
+function renderSkillCategoryChips() {
+    const counts = {};
+    skills.forEach(sk => {
+        const cats = skillCategories(sk);
+        if (cats.length === 0) counts['uncategorized'] = (counts['uncategorized'] || 0) + 1;
+        else cats.forEach(c => counts[c] = (counts[c] || 0) + 1);
+    });
+    const container = document.getElementById('skill-category-chips');
+    if (!container) return;
+    let html = `<button class="chip ${skillCategoryFilter === 'all' ? 'active' : ''}" onclick="setSkillCategory('all')">All</button>`;
+    Object.entries(counts).sort((a, b) => b[1] - a[1]).forEach(([cat, n]) => {
+        html += `<button class="chip ${skillCategoryFilter === cat ? 'active' : ''}" onclick="setSkillCategory('${esc(cat)}')">${esc(catLabel(cat))} <span style='opacity:.5'>${n}</span></button>`;
+    });
+    container.innerHTML = html;
+}
+
+function setSkillCategory(cat) { skillCategoryFilter = cat; renderSkillCategoryChips(); renderSkillsTable(); }
+
+function getFilteredSkills() {
+    let list = skills;
+    if (skillCategoryFilter !== 'all') {
+        list = list.filter(sk => {
+            const cats = skillCategories(sk);
+            return cats.includes(skillCategoryFilter) || (cats.length === 0 && skillCategoryFilter === 'uncategorized');
+        });
+    }
+    if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        list = list.filter(sk => sk.name.toLowerCase().includes(q) || (sk.description || '').toLowerCase().includes(q));
+    }
+    return list;
+}
+
+function renderSkillsTable() {
+    const filtered = getFilteredSkills();
+    const tbody = document.getElementById('skills-tbody');
+    const empty = document.getElementById('skills-empty');
+    const noResults = document.getElementById('skills-no-results');
+    const tableWrap = document.querySelector('#tab-skills .agents-table-wrap');
+    const countEl = document.getElementById('skill-count');
+
+    if (skills.length === 0) { empty.classList.remove('hidden'); noResults.classList.add('hidden'); tableWrap.classList.add('hidden'); countEl.textContent = ''; return; }
+    empty.classList.add('hidden');
+    if (filtered.length === 0) { noResults.classList.remove('hidden'); tableWrap.classList.add('hidden'); countEl.textContent = ''; return; }
+    noResults.classList.add('hidden'); tableWrap.classList.remove('hidden');
+    countEl.textContent = `${filtered.length} of ${skills.length}`;
+
+    tbody.innerHTML = filtered.map(sk => {
+        const entry = config.skills?.[sk.name];
+        const active = resolveTargets(entry, knownTargets);
+        const checked = selectedSkills.has(sk.name);
+        const dots = knownTargets.map(t => {
+            const on = active.includes(t);
+            const label = PLATFORM_LABELS[t] || t.slice(0, 2).toUpperCase();
+            return `<button class="pdot ${on ? 'pdot-on' : 'pdot-off'}" onclick="event.stopPropagation();toggleSkillPlatform('${esc(sk.name)}','${esc(t)}',${!on})">${label}</button>`;
+        }).join('');
+        const cats = skillCategories(sk);
+        const catBadges = cats.length ? cats.map(c => `<span class="agent-cat-badge">${esc(catLabel(c))}</span>`).join(' ') : '<span class="agent-cat-badge">—</span>';
+        return `<tr class="${checked ? 'row-selected' : ''}" onclick="viewSkill('${esc(sk.name)}')">
+            <td class="col-check" onclick="event.stopPropagation()"><input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleSkillSelect('${esc(sk.name)}', this.checked)"></td>
+            <td><span class="agent-name">${esc(sk.name)}</span></td>
+            <td title="${esc(sk.description || '')}"><span class="agent-desc">${esc(truncate(sk.description, 100))}</span></td>
+            <td>${catBadges}</td>
+            <td><div class="platform-dots">${dots}</div></td>
+            <td><button class="row-actions-btn" title="Edit" onclick="event.stopPropagation();editSkill('${esc(sk.name)}')">✎</button></td>
+        </tr>`;
+    }).join('');
+    updateSkillBulkBar();
+    const selectAll = document.getElementById('skill-select-all');
+    if (selectAll) selectAll.checked = filtered.length > 0 && filtered.every(sk => selectedSkills.has(sk.name));
+}
+
+async function toggleSkillPlatform(name, platform, enable) {
+    const skillsMap = JSON.parse(JSON.stringify(config.skills || {}));
+    const entry = skillsMap[name] || { targets: [], disabled: false };
+    let current = resolveTargets(entry, knownTargets);
+    if (enable) { if (!current.includes(platform)) current.push(platform); }
+    else { current = current.filter(t => t !== platform); }
+    entry.targets = current; entry.disabled = false; skillsMap[name] = entry;
+    try {
+        await api('/api/config', { method: 'PUT', body: JSON.stringify({ targets: config.targets, agents: config.agents, skills: skillsMap }) });
+        config.skills = skillsMap; renderSkillsTable();
+        showSnackbar(`${name}: ${PLATFORM_NAMES[platform] || platform} ${enable ? 'enabled' : 'disabled'}`);
+    } catch (e) { showSnackbar('Failed: ' + e.message, 4000); }
+}
+
+// Skill selection & bulk
+function toggleSkillSelect(name, checked) { if (checked) selectedSkills.add(name); else selectedSkills.delete(name); renderSkillsTable(); }
+function toggleSkillSelectAll(checked) { const f = getFilteredSkills(); if (checked) f.forEach(s => selectedSkills.add(s.name)); else f.forEach(s => selectedSkills.delete(s.name)); renderSkillsTable(); }
+function clearSkillSelection() { selectedSkills.clear(); renderSkillsTable(); }
+
+function updateSkillBulkBar() {
+    const bar = document.getElementById('skill-bulk-bar');
+    if (!bar) return;
+    if (selectedSkills.size === 0) { bar.classList.add('hidden'); return; }
+    bar.classList.remove('hidden');
+    document.getElementById('skill-bulk-count').textContent = `${selectedSkills.size} selected`;
+    document.getElementById('skill-bulk-enable-targets').innerHTML = knownTargets.map(t =>
+        `<button class="bulk-target-btn" onclick="skillBulkToggle('${esc(t)}', true)">${esc(PLATFORM_LABELS[t] || t)}</button>`).join('');
+    document.getElementById('skill-bulk-disable-targets').innerHTML = knownTargets.map(t =>
+        `<button class="bulk-target-btn bulk-disable" onclick="skillBulkToggle('${esc(t)}', false)">${esc(PLATFORM_LABELS[t] || t)}</button>`).join('');
+}
+
+async function skillBulkToggle(platform, enable) {
+    const m = JSON.parse(JSON.stringify(config.skills || {}));
+    for (const name of selectedSkills) { const e = m[name] || { targets: [], disabled: false }; let c = resolveTargets(e, knownTargets); if (enable) { if (!c.includes(platform)) c.push(platform); } else { c = c.filter(t => t !== platform); } e.targets = c; e.disabled = false; m[name] = e; }
+    try { await api('/api/config', { method: 'PUT', body: JSON.stringify({ targets: config.targets, agents: config.agents, skills: m }) }); config.skills = m; renderSkillsTable(); showSnackbar(`${selectedSkills.size} skills: ${PLATFORM_NAMES[platform] || platform} ${enable ? 'enabled' : 'disabled'}`); } catch (e) { showSnackbar('Bulk failed: ' + e.message, 4000); }
+}
+async function skillBulkEnableAll() {
+    const m = JSON.parse(JSON.stringify(config.skills || {}));
+    for (const name of selectedSkills) { const e = m[name] || {}; e.targets = [...knownTargets]; e.disabled = false; m[name] = e; }
+    try { await api('/api/config', { method: 'PUT', body: JSON.stringify({ targets: config.targets, agents: config.agents, skills: m }) }); config.skills = m; renderSkillsTable(); showSnackbar(`${selectedSkills.size} skills: all on`); } catch (e) { showSnackbar('Failed: ' + e.message, 4000); }
+}
+async function skillBulkDisableAll() {
+    const m = JSON.parse(JSON.stringify(config.skills || {}));
+    for (const name of selectedSkills) { const e = m[name] || {}; e.targets = []; e.disabled = false; m[name] = e; }
+    try { await api('/api/config', { method: 'PUT', body: JSON.stringify({ targets: config.targets, agents: config.agents, skills: m }) }); config.skills = m; renderSkillsTable(); showSnackbar(`${selectedSkills.size} skills: all off`); } catch (e) { showSnackbar('Failed: ' + e.message, 4000); }
+}
+
+// Skill panel
+async function viewSkill(name) {
+    try {
+        const sk = await api('/api/skills/' + name);
+        panelAgent = sk; panelMode = 'view';
+        const entry = config.skills?.[sk.name];
+        const active = resolveTargets(entry, knownTargets);
+        document.getElementById('panel-title').textContent = sk.name;
+        const refList = (sk.references && sk.references.length) ? sk.references.map(r => esc(r.name)).join(', ') : 'None';
+        document.getElementById('panel-body').innerHTML = `
+            <div class="detail-meta">
+                ${sk.description ? `<div class="detail-row"><span class="detail-label">Description</span><span class="detail-value">${esc(sk.description)}</span></div>` : ''}
+                <div class="detail-row"><span class="detail-label">Category</span><span class="detail-value">${skillCategories(sk).map(c => esc(catLabel(c))).join(', ') || '—'}</span></div>
+                <div class="detail-row"><span class="detail-label">Platforms</span><span class="detail-value">${active.length ? active.map(t => esc(PLATFORM_NAMES[t] || t)).join(', ') : 'None'}</span></div>
+                <div class="detail-row"><span class="detail-label">References</span><span class="detail-value">${refList}</span></div>
+            </div>
+            <div class="detail-content">${esc(sk.content || '(empty)')}</div>`;
+        document.getElementById('panel-footer').innerHTML = `
+            <button class="btn btn-ghost" onclick="closePanel()">Close</button>
+            <button class="btn btn-secondary" onclick="editSkill('${esc(sk.name)}')">Edit</button>
+            <button class="btn btn-danger-text btn-sm" onclick="deleteSkill('${esc(sk.name)}')">Delete</button>`;
+        openPanel();
+    } catch (e) { showSnackbar('Failed: ' + e.message, 4000); }
+}
+
+function showCreateSkill() {
+    panelMode = 'create'; panelAgent = null;
+    document.getElementById('panel-title').textContent = 'New Skill';
+    renderSkillForm({ name: '', description: '', categories: [], content: '', targets: [...knownTargets] });
+    document.getElementById('panel-footer').innerHTML = `<button class="btn btn-ghost" onclick="closePanel()">Cancel</button><button class="btn btn-primary" onclick="submitCreateSkill()">Create</button>`;
+    openPanel();
+    setTimeout(() => { const inp = document.getElementById('form-name'); if (inp) inp.focus(); }, 200);
+}
+
+async function editSkill(name) {
+    try {
+        const sk = await api('/api/skills/' + name);
+        panelMode = 'edit'; panelAgent = sk;
+        const entry = config.skills?.[sk.name];
+        const active = resolveTargets(entry, knownTargets);
+        document.getElementById('panel-title').textContent = 'Edit: ' + sk.name;
+        renderSkillForm({ name: sk.name, description: sk.frontmatter?.description || '', categories: skillCategories(sk), content: sk.content || '', targets: active, isEdit: true });
+        document.getElementById('panel-footer').innerHTML = `<button class="btn btn-ghost" onclick="closePanel()">Cancel</button><button class="btn btn-primary" onclick="submitEditSkill('${esc(sk.name)}')">Save</button>`;
+        openPanel();
+    } catch (e) { showSnackbar('Failed: ' + e.message, 4000); }
+}
+
+function renderSkillForm({ name, description, categories = [], content, targets, isEdit = false }) {
+    const targetChips = knownTargets.map(t => {
+        const checked = targets.includes(t);
+        return `<label class="target-chip ${checked ? 'checked' : ''}" onclick="this.classList.toggle('checked')"><input type="checkbox" name="form-target" value="${esc(t)}" ${checked ? 'checked' : ''}>${esc(PLATFORM_NAMES[t] || t)}</label>`;
+    }).join('');
+    document.getElementById('panel-body').innerHTML = `
+        <div class="form-group"><label class="form-label" for="form-name">Name</label><input class="form-input" id="form-name" value="${esc(name)}" placeholder="my-skill" ${isEdit ? 'disabled' : ''}><div class="form-error hidden" id="form-name-error"></div></div>
+        <div class="form-group"><label class="form-label" for="form-desc">Description</label><input class="form-input" id="form-desc" value="${esc(description)}" placeholder="When to trigger this skill…"></div>
+        <div class="form-group">
+            <label class="form-label">Categories</label>
+            <div class="cat-dropdown" id="skill-cat-dropdown"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Platforms</label><div class="form-targets">${targetChips}</div></div>
+        <div class="form-group"><label class="form-label" for="form-content">SKILL.md Content</label><textarea class="form-textarea" id="form-content" placeholder="# Skill Name\n\n## When to Use\n\n…">${esc(content)}</textarea></div>`;
+    renderCategoryDropdown('skill-cat-dropdown', allSkillCategories(), categories, 'form-skill-category');
+}
+
+function getSkillFormData() {
+    const category = getCategoryDropdownValues().join(',');
+    return { name: document.getElementById('form-name').value.trim(), description: document.getElementById('form-desc').value.trim(), category, content: document.getElementById('form-content').value, targets: Array.from(document.querySelectorAll('input[name="form-target"]:checked')).map(c => c.value) };
+}
+
+async function submitCreateSkill() {
+    const data = getSkillFormData();
+    if (!data.name) { document.getElementById('form-name').classList.add('has-error'); document.getElementById('form-name-error').textContent = 'Name is required'; document.getElementById('form-name-error').classList.remove('hidden'); return; }
+    try { await api('/api/skills', { method: 'POST', body: JSON.stringify(data) }); closePanel(); showSnackbar(`Skill "${data.name}" created`); loadSkills(); } catch (e) { showSnackbar('Create failed: ' + e.message, 5000); }
+}
+
+async function submitEditSkill(name) {
+    const data = getSkillFormData();
+    try { await api('/api/skills/' + name, { method: 'PUT', body: JSON.stringify({ content: data.content, description: data.description, category: data.category, targets: data.targets }) }); closePanel(); showSnackbar(`Skill "${name}" saved`); loadSkills(); } catch (e) { showSnackbar('Save failed: ' + e.message, 5000); }
+}
+
+async function deleteSkill(name) {
+    const ok = await showConfirm(`Delete "${name}"?`, 'This removes the skill directory and config entry. Cannot be undone.');
+    if (!ok) return;
+    try { await api('/api/skills/' + name, { method: 'DELETE' }); closePanel(); showSnackbar(`Skill "${name}" deleted`); loadSkills(); } catch (e) { showSnackbar('Delete failed: ' + e.message, 5000); }
 }
 
 // ═══════════════════════════════════
@@ -784,8 +1097,8 @@ function quickPreview(agent, platform) {
 // ═══════════════════════════════════
 async function triggerSync() {
     const ok = await showConfirm(
-        'Sync all agents?',
-        'This generates platform-specific files for all enabled agents.'
+        'Sync all agents & skills?',
+        'This generates platform-specific files for all enabled agents and skills.'
     );
     if (!ok) return;
 
@@ -795,7 +1108,7 @@ async function triggerSync() {
 
     try {
         const res = await api('/api/sync', { method: 'POST' });
-        showSnackbar(`Synced ${res.synced || 0} agents`);
+        showSnackbar(`Synced ${res.agentsSynced || 0} agent(s) and ${res.skillsSynced || 0} skill(s)`);
         await loadAll();
         if (currentTab === 'status') renderStatusList();
         if (currentTab === 'agents') renderAgentsTable();
@@ -855,11 +1168,9 @@ function showConfirm(title, body) {
 const searchInput = document.getElementById('global-search');
 searchInput.addEventListener('input', (e) => {
     searchQuery = e.target.value.trim().toLowerCase();
-    if (currentTab === 'agents') {
-        renderAgentsTable();
-    } else if (searchQuery) {
-        switchTab('agents');
-    }
+    if (currentTab === 'agents') renderAgentsTable();
+    else if (currentTab === 'skills') renderSkillsTable();
+    else if (searchQuery) switchTab('agents');
 });
 
 // ═══════════════════════════════════
@@ -881,10 +1192,11 @@ document.addEventListener('keydown', (e) => {
     if (typing || e.metaKey || e.ctrlKey) return;
 
     if (e.key === '/') { e.preventDefault(); searchInput.focus(); return; }
-    if (e.key === 'n') { e.preventDefault(); showCreateAgent(); return; }
+    if (e.key === 'n') { e.preventDefault(); if (currentTab === 'skills') showCreateSkill(); else showCreateAgent(); return; }
     if (e.key === '1') { switchTab('agents'); return; }
-    if (e.key === '2') { switchTab('preview'); return; }
-    if (e.key === '3') { switchTab('status'); return; }
+    if (e.key === '2') { switchTab('skills'); return; }
+    if (e.key === '3') { switchTab('preview'); return; }
+    if (e.key === '4') { switchTab('status'); return; }
 });
 
 // ═══════════════════════════════════

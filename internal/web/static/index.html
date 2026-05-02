@@ -18,7 +18,7 @@
         </div>
         <div class="toolbar-search">
             <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="m11 11 3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-            <input type="search" id="global-search" placeholder="Search agents… ( / )" aria-label="Search agents" autocomplete="off">
+            <input type="search" id="global-search" placeholder="Search agents & skills… ( / )" aria-label="Search agents and skills" autocomplete="off">
         </div>
         <div class="toolbar-right">
             <button class="btn btn-ghost" id="btn-theme" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle light/dark theme">
@@ -33,6 +33,10 @@
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
                 <span>New Agent</span>
             </button>
+            <button class="btn btn-secondary" id="btn-create-skill" onclick="showCreateSkill()">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+                <span>New Skill</span>
+            </button>
         </div>
     </header>
 
@@ -40,6 +44,10 @@
         <button class="tab active" data-tab="agents" role="tab" aria-selected="true" aria-controls="tab-agents">
             <span>Agents</span>
             <span class="tab-badge" id="badge-agents">0</span>
+        </button>
+        <button class="tab" data-tab="skills" role="tab" aria-selected="false" aria-controls="tab-skills">
+            <span>Skills</span>
+            <span class="tab-badge" id="badge-skills">0</span>
         </button>
         <button class="tab" data-tab="preview" role="tab" aria-selected="false" aria-controls="tab-preview">
             <span>Preview</span>
@@ -93,6 +101,51 @@
             </div>
             <div class="agents-no-results hidden" id="agents-no-results">
                 <p>No agents match your search.</p>
+            </div>
+        </section>
+
+        <!-- SKILLS TAB -->
+        <section id="tab-skills" class="tab-panel" role="tabpanel">
+            <div class="agents-toolbar">
+                <div class="filter-chips" id="skill-category-chips"></div>
+                <span class="agent-count" id="skill-count"></span>
+            </div>
+            <div class="bulk-bar hidden" id="skill-bulk-bar">
+                <span class="bulk-count" id="skill-bulk-count">0 selected</span>
+                <span class="bulk-sep">—</span>
+                <span class="bulk-label">Enable:</span>
+                <div class="bulk-targets" id="skill-bulk-enable-targets"></div>
+                <span class="bulk-sep">|</span>
+                <span class="bulk-label">Disable:</span>
+                <div class="bulk-targets" id="skill-bulk-disable-targets"></div>
+                <span class="bulk-sep">|</span>
+                <button class="btn btn-ghost btn-sm" onclick="skillBulkEnableAll()">All On</button>
+                <button class="btn btn-ghost btn-sm" onclick="skillBulkDisableAll()">All Off</button>
+                <button class="btn btn-ghost btn-sm" onclick="clearSkillSelection()">Clear</button>
+            </div>
+            <div class="agents-table-wrap">
+                <table class="agents-table" id="skills-table">
+                    <thead>
+                        <tr>
+                            <th class="col-check"><input type="checkbox" id="skill-select-all" onchange="toggleSkillSelectAll(this.checked)" title="Select all"></th>
+                            <th class="col-name">Skill</th>
+                            <th class="col-desc">Description</th>
+                            <th class="col-cat">Category</th>
+                            <th class="col-platforms" id="skill-platforms-header">Platforms</th>
+                            <th class="col-actions"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="skills-tbody"></tbody>
+                </table>
+            </div>
+            <div class="agents-empty hidden" id="skills-empty">
+                <div class="empty-icon">🛠</div>
+                <h3>No skills yet</h3>
+                <p>Create your first skill or run <code>dotagen init</code> to import 16 built-in skills.</p>
+                <button class="btn btn-primary" onclick="showCreateSkill()">Create Skill</button>
+            </div>
+            <div class="agents-no-results hidden" id="skills-no-results">
+                <p>No skills match your search.</p>
             </div>
         </section>
 

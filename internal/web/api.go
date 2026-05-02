@@ -15,6 +15,7 @@ import (
 	"github.com/enolalabs/dotagen/v2/internal/agent"
 	"github.com/enolalabs/dotagen/v2/internal/config"
 	"github.com/enolalabs/dotagen/v2/internal/engine"
+	"github.com/enolalabs/dotagen/v2/internal/skill"
 	"gopkg.in/yaml.v3"
 )
 
@@ -438,9 +439,27 @@ func (s *Server) handleSync(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	// Also sync skills
+	skills, err := skill.ParseSkillsDir(filepath.Join(dotgenDir, "skills"))
+	if err != nil {
+		log.Printf("failed to parse skills: %v", err)
+		skills = nil
+	}
+	var skillResults []engine.SkillRenderResult
+	if len(skills) > 0 {
+		skillResults, err = renderer.RenderAllSkills(skills, cfg, dotgenDir, projectDir)
+		if err != nil {
+			log.Printf("failed to render skills: %v", err)
+		}
+	}
+
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"synced":  len(results),
-		"results": results,
+		"synced":       len(results) + len(skillResults),
+		"agentsSynced": len(results),
+		"skillsSynced": len(skillResults),
+		"results":      results,
+		"skillResults": skillResults,
 	})
 }
 
@@ -473,12 +492,22 @@ func (s *Server) handleSyncTarget(w http.ResponseWriter, r *http.Request) {
 	filteredCfg := &config.Config{
 		Targets: []string{targetName},
 		Agents:  make(map[string]config.AgentConfig),
+		Skills:  make(map[string]config.SkillConfig),
 	}
 	for name, ac := range cfg.Agents {
 		resolved := cfg.ResolveTargets(name)
 		for _, t := range resolved {
 			if t == targetName {
 				filteredCfg.Agents[name] = config.AgentConfig{Targets: config.StringOrSlice{targetName}, Disabled: ac.Disabled}
+				break
+			}
+		}
+	}
+	for name, sc := range cfg.Skills {
+		resolved := cfg.ResolveSkillTargets(name)
+		for _, t := range resolved {
+			if t == targetName {
+				filteredCfg.Skills[name] = config.SkillConfig{Targets: config.StringOrSlice{targetName}, Disabled: sc.Disabled}
 				break
 			}
 		}
@@ -496,10 +525,28 @@ func (s *Server) handleSyncTarget(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	// Also sync skills for this target
+	skills, err := skill.ParseSkillsDir(filepath.Join(dotgenDir, "skills"))
+	if err != nil {
+		log.Printf("failed to parse skills: %v", err)
+		skills = nil
+	}
+	var skillResults []engine.SkillRenderResult
+	if len(skills) > 0 {
+		skillResults, err = renderer.RenderAllSkills(skills, filteredCfg, dotgenDir, projectDir)
+		if err != nil {
+			log.Printf("failed to render skills: %v", err)
+		}
+	}
+
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"synced":  len(results),
-		"target":  targetName,
-		"results": results,
+		"synced":       len(results) + len(skillResults),
+		"agentsSynced": len(results),
+		"skillsSynced": len(skillResults),
+		"target":       targetName,
+		"results":      results,
+		"skillResults": skillResults,
 	})
 }
 
@@ -530,6 +577,19 @@ func (s *Server) handleClean(w http.ResponseWriter, r *http.Request) {
 			removed++
 		}
 	}
+
+	// Also clean skill symlinks
+	skillLinks, err := engine.FindDotagenSkillSymlinks(projectDir, dotgenDir)
+	if err != nil {
+		log.Printf("failed to find skill symlinks: %v", err)
+	} else {
+		for _, link := range skillLinks {
+			if err := os.RemoveAll(link.Path); err == nil {
+				removed++
+			}
+		}
+	}
+
 	if err := engine.RemoveGeneratedContents(dotgenDir); err != nil {
 		writeError(w, http.StatusInternalServerError, fmt.Sprintf("removed %d symlinks but failed to clean generated: %v", removed, err))
 		return

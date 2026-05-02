@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/enolalabs/dotagen/v2/internal/agent"
 	"github.com/enolalabs/dotagen/v2/internal/config"
+	"github.com/enolalabs/dotagen/v2/internal/skill"
 	"gopkg.in/yaml.v3"
 )
 
@@ -51,4 +53,31 @@ func (a *OpenCodeAdapter) SymlinkPath(agentName string) string {
 
 func (a *OpenCodeAdapter) EnsureDirectories(projectDir string) error {
 	return os.MkdirAll(filepath.Join(projectDir, config.OpenCodeRootPath), 0o755)
+}
+
+// SkillAdapter implementation
+
+func (a *OpenCodeAdapter) RenderSkill(sk skill.Skill) (string, error) {
+	desc := skill.ExtractDescription(sk)
+	cleanName := strings.TrimPrefix(sk.Name, "ds-")
+
+	var sb strings.Builder
+	sb.WriteString("---\n")
+	sb.WriteString(fmt.Sprintf("name: %s\n", cleanName))
+	sb.WriteString(fmt.Sprintf("description: %s\n", desc))
+	sb.WriteString("---\n\n")
+	sb.WriteString(sk.Content)
+	return sb.String(), nil
+}
+
+func (a *OpenCodeAdapter) SkillOutputDir(skillName string) string {
+	return filepath.Join("opencode", "skills", skillName)
+}
+
+func (a *OpenCodeAdapter) SkillSymlinkDir(skillName string) string {
+	return filepath.Join(config.OpenCodeSkillPath, skillName)
+}
+
+func (a *OpenCodeAdapter) EnsureSkillDirectories(projectDir string) error {
+	return os.MkdirAll(filepath.Join(projectDir, config.OpenCodeSkillPath), 0o755)
 }

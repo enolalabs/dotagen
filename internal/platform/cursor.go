@@ -7,6 +7,7 @@ import (
 
 	"github.com/enolalabs/dotagen/v2/internal/agent"
 	"github.com/enolalabs/dotagen/v2/internal/config"
+	"github.com/enolalabs/dotagen/v2/internal/skill"
 	"gopkg.in/yaml.v3"
 )
 
@@ -52,4 +53,29 @@ func (a *CursorAdapter) SymlinkPath(agentName string) string {
 
 func (a *CursorAdapter) EnsureDirectories(projectDir string) error {
 	return os.MkdirAll(filepath.Join(projectDir, config.CursorRootPath), 0o755)
+}
+
+func (a *CursorAdapter) RenderSkill(sk skill.Skill) (string, error) {
+	desc := skill.ExtractDescription(sk)
+	fm := CursorFrontmatter{
+		Description: desc,
+		AlwaysApply: false,
+	}
+	fmBytes, err := yaml.Marshal(&fm)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal cursor skill frontmatter: %w", err)
+	}
+	return fmt.Sprintf("---\n%s---\n\n%s", string(fmBytes), sk.Content), nil
+}
+
+func (a *CursorAdapter) SkillOutputDir(skillName string) string {
+	return filepath.Join("cursor", "skills", skillName)
+}
+
+func (a *CursorAdapter) SkillSymlinkDir(skillName string) string {
+	return filepath.Join(config.CursorSkillPath, skillName)
+}
+
+func (a *CursorAdapter) EnsureSkillDirectories(projectDir string) error {
+	return os.MkdirAll(filepath.Join(projectDir, config.CursorSkillPath), 0o755)
 }

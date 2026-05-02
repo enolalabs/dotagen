@@ -51,6 +51,15 @@ func (s *Server) Start() error {
 	mux.HandleFunc("POST /api/clean", s.handleClean)
 	mux.HandleFunc("GET /api/status", s.handleStatus)
 
+	// Skill API routes
+	mux.HandleFunc("GET /api/skills", s.handleListSkills)
+	mux.HandleFunc("GET /api/skills/{name}", s.handleGetSkill)
+	mux.HandleFunc("POST /api/skills", s.handleCreateSkill)
+	mux.HandleFunc("PUT /api/skills/{name}", s.handleUpdateSkill)
+	mux.HandleFunc("DELETE /api/skills/{name}", s.handleDeleteSkill)
+	mux.HandleFunc("GET /api/preview/skill/{skill}/{target}", s.handlePreviewSkill)
+	mux.HandleFunc("POST /api/sync-skills", s.handleSyncWithSkills)
+
 	return http.ListenAndServe(fmt.Sprintf(":%d", s.port), mux)
 }
 
