@@ -10,16 +10,19 @@ import (
 )
 
 const ClaudeCodeRootPath = ".claude/agents"
-const CursorRootPath = ".cursor/agents"
+const CodexRootPath = ".codex/agents"
 const GeminiCliRootPath = ".gemini/agents"
 const OpenCodeRootPath = ".config/opencode/agents"
+const AntigravityRootPath = ".agents"
 
 const ClaudeCodeSkillPath = ".claude/skills"
-const CursorSkillPath = ".cursor/skills"
-const GeminiCliSkillPath = ".gemini/skills"
+const CodexSkillPath = ".codex/skills"
+const GeminiCliSkillPath = ".agents/skills"
 const OpenCodeSkillPath = ".opencode/skills"
+const AntigravitySkillPath = ".agents/skills"
+const AntigravityGlobalWorkflowsPath = ".gemini/antigravity/global_workflows"
 
-var ValidTargets = []string{"claude-code", "cursor", "gemini-cli", "opencode"}
+var ValidTargets = []string{"antigravity", "claude-code", "codex", "gemini-cli", "opencode"}
 
 type StringOrSlice []string
 
@@ -215,10 +218,11 @@ func GetProjectDir() (string, error) {
 func DetectPlatforms(homeDir string) []string {
 	var detected []string
 	checks := map[string]string{
-		ClaudeCodeRootPath: "claude-code",
-		CursorRootPath:     "cursor",
-		GeminiCliRootPath:  "gemini-cli",
-		OpenCodeRootPath:   "opencode",
+		AntigravityRootPath: "antigravity",
+		ClaudeCodeRootPath:  "claude-code",
+		CodexRootPath:       "codex",
+		GeminiCliRootPath:   "gemini-cli",
+		OpenCodeRootPath:    "opencode",
 	}
 	for dir, platform := range checks {
 		if _, err := os.Stat(filepath.Join(homeDir, dir)); err == nil {

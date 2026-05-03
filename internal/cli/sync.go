@@ -15,7 +15,7 @@ import (
 var syncCmd = &cobra.Command{
 	Use:   "sync [target]",
 	Short: "Sync agents and skills to target platforms",
-	Long:  "Render all agents and skills, then create symlinks. Optionally specify a single target (claude-code, cursor, gemini-cli, opencode).",
+	Long:  "Render all agents and skills, then create symlinks. Optionally specify a single target (antigravity, claude-code, codex, gemini-cli, opencode).",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dotgenDir, err := config.FindDotgenDir()
@@ -144,6 +144,20 @@ var syncCmd = &cobra.Command{
 		removedSkills, err := engine.RemoveStaleSkillSymlinks(projectDir, dotgenDir, skillNames, syncTargets)
 		if err != nil {
 			fmt.Printf("  ⚠ Failed to clean stale skill symlinks: %v\n", err)
+		}
+
+		// Sync global workflows for Antigravity
+		var workflowsSynced int
+		for _, t := range syncTargets {
+			if t == "antigravity" {
+				workflowsSynced, err = engine.SyncGlobalWorkflows(agents, projectDir)
+				if err != nil {
+					fmt.Printf("  ⚠ Failed to sync global workflows: %v\n", err)
+				} else {
+					fmt.Printf("✓ Synced %d global workflow(s) to %s\n", workflowsSynced, config.AntigravityGlobalWorkflowsPath)
+				}
+				break
+			}
 		}
 
 		totalSynced := len(results) + len(skillResults)

@@ -36,7 +36,7 @@ Content can be provided via:
 
 Examples:
   dotagen create review-code
-  dotagen create review-code -d "Senior code reviewer" -t claude-code,cursor
+  dotagen create review-code -d "Senior code reviewer" -t claude-code,gemini-cli
   dotagen create my-agent --content "# My Agent\n\nInstructions..."
   dotagen create my-agent --file ./template.md --template`,
 	Args: cobra.ExactArgs(1),

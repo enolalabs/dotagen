@@ -110,9 +110,9 @@ func RemoveGeneratedContents(dotgenDir string) error {
 func FindDotagenSymlinks(projectDir string, dotgenDir string) ([]SymlinkInfo, error) {
 	platformDirs := map[string]string{
 		config.ClaudeCodeRootPath: "claude-code",
-		config.CursorRootPath:     "cursor",
-		config.GeminiCliRootPath:  "gemini-cli",
-		config.OpenCodeRootPath:   "opencode",
+		config.CodexRootPath:     "codex",
+		config.GeminiCliRootPath: "gemini-cli",
+		config.OpenCodeRootPath:  "opencode",
 	}
 
 	var links []SymlinkInfo

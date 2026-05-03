@@ -8,8 +8,9 @@ type Registry struct {
 
 func NewRegistry() *Registry {
 	r := &Registry{adapters: make(map[string]Adapter)}
+	r.Register(NewAntigravityAdapter())
 	r.Register(NewClaudeCodeAdapter())
-	r.Register(NewCursorAdapter())
+	r.Register(NewCodexAdapter())
 	r.Register(NewGeminiCLIAdapter())
 	r.Register(NewOpenCodeAdapter())
 	return r

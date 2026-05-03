@@ -19,15 +19,17 @@ let selectedAgents = new Set();
 let selectedSkills = new Set();
 
 const PLATFORM_LABELS = {
-    'claude-code': 'Claude',
-    'cursor': 'Cursor',
-    'gemini-cli': 'Gemini',
+    'antigravity': 'AG',
+    'claude-code': 'Claude Code',
+    'codex': 'Codex',
+    'gemini-cli': 'Gemini Cli',
     'opencode': 'OpenCode',
 };
 
 const PLATFORM_NAMES = {
+    'antigravity': 'Antigravity',
     'claude-code': 'Claude Code',
-    'cursor': 'Cursor',
+    'codex': 'Codex',
     'gemini-cli': 'Gemini CLI',
     'opencode': 'OpenCode',
 };
@@ -820,7 +822,7 @@ function renderSkillsTable() {
         const dots = knownTargets.map(t => {
             const on = active.includes(t);
             const label = PLATFORM_LABELS[t] || t.slice(0, 2).toUpperCase();
-            return `<button class="pdot ${on ? 'pdot-on' : 'pdot-off'}" onclick="event.stopPropagation();toggleSkillPlatform('${esc(sk.name)}','${esc(t)}',${!on})">${label}</button>`;
+            return `<button class="pdot ${on ? 'pdot-on' : 'pdot-off'}" data-platform="${esc(t)}" title="${on ? 'Disable' : 'Enable'} ${esc(PLATFORM_NAMES[t] || t)}" onclick="event.stopPropagation();toggleSkillPlatform('${esc(sk.name)}','${esc(t)}',${!on})">${label}</button>`;
         }).join('');
         const cats = skillCategories(sk);
         const catBadges = cats.length ? cats.map(c => `<span class="agent-cat-badge">${esc(catLabel(c))}</span>`).join(' ') : '<span class="agent-cat-badge">—</span>';

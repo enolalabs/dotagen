@@ -122,7 +122,7 @@ var initCmd = &cobra.Command{
 				fmt.Printf("    ✓ %s\n", p)
 			}
 		} else {
-			fmt.Println("    (none — install Claude Code, Cursor, Gemini CLI, or OpenCode)")
+			fmt.Println("    (none — install Antigravity, Claude Code, Codex, Gemini CLI, or OpenCode)")
 		}
 		fmt.Println()
 		fmt.Println("Next steps:")
@@ -146,7 +146,7 @@ func buildDefaultConfig(agentNames []string, skillNames []string, detectedPlatfo
 	sb.WriteString("# All agents and skills are listed with empty targets (disabled).\n")
 	sb.WriteString("# Set targets to enable them. Examples:\n")
 	sb.WriteString("#   targets: all                    — all platforms\n")
-	sb.WriteString("#   targets: [claude-code, cursor]  — specific platforms\n")
+	sb.WriteString("#   targets: [claude-code, gemini-cli]  — specific platforms\n")
 	sb.WriteString("#\n")
 	sb.WriteString("# Platforms are auto-detected from $HOME.\n")
 	sb.WriteString("# This 'targets' field is used as fallback when no platform is detected.\n")
@@ -156,7 +156,7 @@ func buildDefaultConfig(agentNames []string, skillNames []string, detectedPlatfo
 		sb.WriteString("# Auto-detected platforms:\n")
 	}
 	sb.WriteString("targets:\n")
-	allTargets := []string{"claude-code", "cursor", "gemini-cli", "opencode"}
+	allTargets := []string{"antigravity", "claude-code", "gemini-cli", "opencode"}
 	if len(detectedPlatforms) > 0 {
 		for _, t := range detectedPlatforms {
 			sb.WriteString(fmt.Sprintf("  - %s\n", t))

@@ -162,5 +162,5 @@ TODO: Describe when to invoke this skill.
 
 - [ ] Item 1
 - [ ] Item 2
-`, cleanName, displayName)
+`, name, displayName)
 }

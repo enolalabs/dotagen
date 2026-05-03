@@ -51,8 +51,7 @@ func (a *ClaudeCodeAdapter) EnsureDirectories(projectDir string) error {
 func (a *ClaudeCodeAdapter) RenderSkill(sk skill.Skill) (string, error) {
 	var sb strings.Builder
 	sb.WriteString("---\n")
-	name := strings.TrimPrefix(sk.Name, "ds-")
-	sb.WriteString(fmt.Sprintf("name: %s\n", name))
+	sb.WriteString(fmt.Sprintf("name: %s\n", sk.Name))
 	if desc, ok := sk.Frontmatter["description"]; ok && desc != "" {
 		sb.WriteString(fmt.Sprintf("description: %s\n", desc))
 	}

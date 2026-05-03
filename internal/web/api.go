@@ -454,12 +454,25 @@ func (s *Server) handleSync(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Sync global workflows for Antigravity
+	var workflowsSynced int
+	for _, t := range cfg.Targets {
+		if t == "antigravity" {
+			workflowsSynced, err = engine.SyncGlobalWorkflows(agents, projectDir)
+			if err != nil {
+				log.Printf("failed to sync global workflows: %v", err)
+			}
+			break
+		}
+	}
+
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"synced":       len(results) + len(skillResults),
-		"agentsSynced": len(results),
-		"skillsSynced": len(skillResults),
-		"results":      results,
-		"skillResults": skillResults,
+		"synced":          len(results) + len(skillResults),
+		"agentsSynced":    len(results),
+		"skillsSynced":    len(skillResults),
+		"workflowsSynced": workflowsSynced,
+		"results":         results,
+		"skillResults":    skillResults,
 	})
 }
 
@@ -540,13 +553,23 @@ func (s *Server) handleSyncTarget(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Sync global workflows for Antigravity
+	var workflowsSynced int
+	if targetName == "antigravity" {
+		workflowsSynced, err = engine.SyncGlobalWorkflows(agents, projectDir)
+		if err != nil {
+			log.Printf("failed to sync global workflows: %v", err)
+		}
+	}
+
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"synced":       len(results) + len(skillResults),
-		"agentsSynced": len(results),
-		"skillsSynced": len(skillResults),
-		"target":       targetName,
-		"results":      results,
-		"skillResults": skillResults,
+		"synced":          len(results) + len(skillResults),
+		"agentsSynced":    len(results),
+		"skillsSynced":    len(skillResults),
+		"workflowsSynced": workflowsSynced,
+		"target":          targetName,
+		"results":         results,
+		"skillResults":    skillResults,
 	})
 }
 

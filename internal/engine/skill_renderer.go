@@ -86,15 +86,31 @@ func (r *Renderer) RenderAllSkills(skills []skill.Skill, cfg *config.Config, dot
 
 // FindDotagenSkillSymlinks finds all dotagen-managed skill symlinks in platform directories.
 func FindDotagenSkillSymlinks(projectDir string, dotgenDir string) ([]SymlinkInfo, error) {
-	skillDirs := map[string]string{
-		config.ClaudeCodeSkillPath: "claude-code",
-		config.CursorSkillPath:    "cursor",
-		config.GeminiCliSkillPath: "gemini-cli",
-		config.OpenCodeSkillPath:  "opencode",
+	type skillDirEntry struct {
+		dir      string
+		platform string
+	}
+	entries := []skillDirEntry{
+		{config.AntigravitySkillPath, "antigravity"},
+		{config.ClaudeCodeSkillPath, "claude-code"},
+		{config.CodexSkillPath, "codex"},
+		{config.GeminiCliSkillPath, "gemini-cli"},
+		{config.OpenCodeSkillPath, "opencode"},
+	}
+
+	// Deduplicate directories — if multiple platforms share a path, use the first one
+	seen := make(map[string]bool)
+	var skillDirs []skillDirEntry
+	for _, e := range entries {
+		if !seen[e.dir] {
+			seen[e.dir] = true
+			skillDirs = append(skillDirs, e)
+		}
 	}
 
 	var links []SymlinkInfo
-	for dir, plat := range skillDirs {
+	for _, entry := range skillDirs {
+		dir, plat := entry.dir, entry.platform
 		fullDir := filepath.Join(projectDir, dir)
 		entries, err := os.ReadDir(fullDir)
 		if err != nil {

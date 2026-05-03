@@ -14,7 +14,7 @@ func TestLoadConfig(t *testing.T) {
 	content := `
 targets:
   - claude-code
-  - cursor
+  - gemini-cli
 agents:
   review:
     targets: all
@@ -27,13 +27,13 @@ agents:
 
 	cfg, err := LoadConfig(dir)
 	require.NoError(t, err)
-	assert.Equal(t, []string{"claude-code", "cursor"}, cfg.Targets)
+	assert.Equal(t, []string{"claude-code", "gemini-cli"}, cfg.Targets)
 	assert.Equal(t, 2, len(cfg.Agents))
 }
 
 func TestConfigValidate(t *testing.T) {
 	cfg := &Config{
-		Targets: []string{"claude-code", "cursor"},
+		Targets: []string{"claude-code", "gemini-cli"},
 		Agents: map[string]AgentConfig{
 			"test": {Targets: []string{"claude-code"}},
 		},
@@ -48,16 +48,16 @@ func TestConfigValidate(t *testing.T) {
 
 func TestResolveTargets(t *testing.T) {
 	cfg := &Config{
-		Targets: []string{"claude-code", "cursor", "gemini-cli"},
+		Targets: []string{"claude-code", "gemini-cli", "opencode"},
 		Agents: map[string]AgentConfig{
 			"all-agent":  {Targets: []string{"all"}},
-			"some-agent": {Targets: []string{"claude-code", "cursor"}},
+			"some-agent": {Targets: []string{"claude-code", "gemini-cli"}},
 			"disabled":   {Targets: []string{"all"}, Disabled: true},
 		},
 	}
 
-	assert.Equal(t, []string{"claude-code", "cursor", "gemini-cli"}, cfg.ResolveTargets("all-agent"))
-	assert.Equal(t, []string{"claude-code", "cursor"}, cfg.ResolveTargets("some-agent"))
+	assert.Equal(t, []string{"claude-code", "gemini-cli", "opencode"}, cfg.ResolveTargets("all-agent"))
+	assert.Equal(t, []string{"claude-code", "gemini-cli"}, cfg.ResolveTargets("some-agent"))
 	assert.Nil(t, cfg.ResolveTargets("disabled"))
 	assert.Nil(t, cfg.ResolveTargets("nonexistent"))
 }

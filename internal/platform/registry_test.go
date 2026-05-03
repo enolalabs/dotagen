@@ -10,7 +10,7 @@ import (
 
 func TestRegistry(t *testing.T) {
 	r := NewRegistry()
-	assert.Equal(t, 4, len(r.List()))
+	assert.Equal(t, 5, len(r.List()))
 
 	_, err := r.Get("claude-code")
 	assert.NoError(t, err)
@@ -33,32 +33,30 @@ func TestClaudeCodeAdapter(t *testing.T) {
 	assert.Equal(t, ".claude/agents/test.md", a.SymlinkPath("test"))
 }
 
-func TestCursorAdapter(t *testing.T) {
-	a := NewCursorAdapter()
-	assert.Equal(t, "cursor", a.Name())
+func TestCodexAdapter(t *testing.T) {
+	a := NewCodexAdapter()
+	assert.Equal(t, "codex", a.Name())
 
-	ag := agent.Agent{Name: "test", Content: "# My Agent\nHello"}
+	ag := agent.Agent{Name: "test", Content: "# Test\nHello"}
 	out, err := a.Render(ag)
 	require.NoError(t, err)
 	assert.Contains(t, out, "---")
-	assert.Contains(t, out, "description: My Agent")
-	assert.Contains(t, out, "alwaysApply: true")
-	assert.Contains(t, out, "# My Agent")
-	assert.Equal(t, "cursor/test.mdc", a.OutputPath("test"))
-	assert.Equal(t, ".cursor/agents/test.mdc", a.SymlinkPath("test"))
+	assert.Contains(t, out, "name: test")
+	assert.Contains(t, out, "# Test\nHello")
+	assert.Equal(t, "codex/test.md", a.OutputPath("test"))
+	assert.Equal(t, ".codex/agents/test.md", a.SymlinkPath("test"))
 }
 
-func TestCursorAdapterWithDescription(t *testing.T) {
-	a := NewCursorAdapter()
-	ag := agent.Agent{
-		Name:    "review",
-		Content: "# Review\nContent",
-		Frontmatter: map[string]string{"description": "Code reviewer"},
-	}
-	out, err := a.Render(ag)
-	require.NoError(t, err)
-	assert.Contains(t, out, "description: Code reviewer")
+func TestCodexAdapterSkillAdapter(t *testing.T) {
+	a := NewCodexAdapter()
+	// Verify it implements SkillAdapter
+	var _ SkillAdapter = a
+
+	assert.Equal(t, "codex/skills/ds-my-skill", a.SkillOutputDir("ds-my-skill"))
+	assert.Equal(t, ".codex/skills/ds-my-skill", a.SkillSymlinkDir("ds-my-skill"))
 }
+
+
 
 func TestGeminiCLIAdapter(t *testing.T) {
 	a := NewGeminiCLIAdapter()
@@ -86,3 +84,26 @@ func TestOpenCodeAdapter(t *testing.T) {
 	assert.Equal(t, "opencode/test.md", a.OutputPath("test"))
 	assert.Equal(t, ".config/opencode/agents/test.md", a.SymlinkPath("test"))
 }
+
+func TestAntigravityAdapter(t *testing.T) {
+	a := NewAntigravityAdapter()
+	assert.Equal(t, "antigravity", a.Name())
+
+	ag := agent.Agent{Name: "test", Content: "# Test\nHello"}
+	out, err := a.Render(ag)
+	require.NoError(t, err)
+	// Antigravity uses plain markdown, no frontmatter
+	assert.Equal(t, "# Test\nHello", out)
+	assert.Equal(t, "antigravity/test.md", a.OutputPath("test"))
+	assert.Equal(t, ".agents/test.md", a.SymlinkPath("test"))
+}
+
+func TestAntigravityAdapterSkillAdapter(t *testing.T) {
+	a := NewAntigravityAdapter()
+	// Verify it implements SkillAdapter
+	var _ SkillAdapter = a
+
+	assert.Equal(t, "antigravity/skills/ds-my-skill", a.SkillOutputDir("ds-my-skill"))
+	assert.Equal(t, ".agents/skills/ds-my-skill", a.SkillSymlinkDir("ds-my-skill"))
+}
+

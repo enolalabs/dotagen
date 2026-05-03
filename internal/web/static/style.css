@@ -331,12 +331,16 @@ body {
     border: 1px solid var(--border);
 }
 .pdot-off:hover { border-color: var(--border-strong); background: var(--bg-active); }
+.pdot[data-platform="antigravity"].pdot-on { background: #4285f4; }
 .pdot[data-platform="claude-code"].pdot-on { background: #a78bfa; }
-.pdot[data-platform="cursor"].pdot-on { background: #3b82f6; }
+.pdot[data-platform="codex"].pdot-on { background: #10a37f; }
+
 .pdot[data-platform="gemini-cli"].pdot-on { background: #34d399; }
 .pdot[data-platform="opencode"].pdot-on { background: #fb923c; }
+.pdot[data-platform="antigravity"].pdot-off:hover { color: #4285f4; }
 .pdot[data-platform="claude-code"].pdot-off:hover { color: #a78bfa; }
-.pdot[data-platform="cursor"].pdot-off:hover { color: #3b82f6; }
+.pdot[data-platform="codex"].pdot-off:hover { color: #10a37f; }
+
 .pdot[data-platform="gemini-cli"].pdot-off:hover { color: #34d399; }
 .pdot[data-platform="opencode"].pdot-off:hover { color: #fb923c; }
 

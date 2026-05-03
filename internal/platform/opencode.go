@@ -59,11 +59,9 @@ func (a *OpenCodeAdapter) EnsureDirectories(projectDir string) error {
 
 func (a *OpenCodeAdapter) RenderSkill(sk skill.Skill) (string, error) {
 	desc := skill.ExtractDescription(sk)
-	cleanName := strings.TrimPrefix(sk.Name, "ds-")
-
 	var sb strings.Builder
 	sb.WriteString("---\n")
-	sb.WriteString(fmt.Sprintf("name: %s\n", cleanName))
+	sb.WriteString(fmt.Sprintf("name: %s\n", sk.Name))
 	sb.WriteString(fmt.Sprintf("description: %s\n", desc))
 	sb.WriteString("---\n\n")
 	sb.WriteString(sk.Content)
