@@ -65,7 +65,9 @@ func TestGeminiCLIAdapter(t *testing.T) {
 	ag := agent.Agent{Name: "test", Content: "# Test\nHello"}
 	out, err := a.Render(ag)
 	require.NoError(t, err)
-	assert.Equal(t, "# Test\nHello", out)
+	assert.Contains(t, out, "---")
+	assert.Contains(t, out, "name: test")
+	assert.Contains(t, out, "# Test\nHello")
 	assert.Equal(t, "gemini-cli/test.md", a.OutputPath("test"))
 	assert.Equal(t, ".gemini/agents/test.md", a.SymlinkPath("test"))
 }

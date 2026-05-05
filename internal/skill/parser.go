@@ -162,5 +162,21 @@ TODO: Describe when to invoke this skill.
 
 - [ ] Item 1
 - [ ] Item 2
+
+<!-- ─── Reference Files ───────────────────────────────────────────────
+     You can add supporting files alongside this SKILL.md. Any file in
+     this directory will be bundled with the skill and inlined into the
+     rendered output so the AI agent always has full context.
+
+     Examples:
+       examples.md        — worked examples or patterns to follow
+       checklist.md       — detailed quality checklist
+       scripts/setup.sh   — automation scripts referenced by the workflow
+       templates/pr.md    — template files the skill produces
+
+     Reference files with .md extension are inlined as markdown.
+     Other files are wrapped in a code fence with language detection.
+     Link to them from the workflow: [examples](examples.md)
+-->
 `, name, displayName)
 }
