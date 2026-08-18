@@ -106,7 +106,7 @@ dotagen --version
 ```powershell
 git clone https://github.com/enolalabs/dotagen.git
 cd dotagen
-go build -ldflags="-X github.com/enolalabs/dotagen/v2/internal/cli/version=dev" -o dotagen.exe .\cmd\dotagen
+go build -ldflags="-X github.com/enolalabs/dotagen/v2/internal/cli.version=dev" -o dotagen.exe .\cmd\dotagen
 mkdir "$env:USERPROFILE\bin" -Force -ErrorAction SilentlyContinue
 Copy-Item dotagen.exe "$env:USERPROFILE\bin\"
 dotagen --version
@@ -562,6 +562,25 @@ make clean     # Remove build artifacts
 ├── Makefile
 └── README.md
 ```
+
+### CI/CD
+
+| Workflow | Trigger | What it does |
+|---|---|---|
+| [`test.yml`](.github/workflows/test.yml) | push to `main`, every PR | `go vet`, `go build`, `go test`, cross-compile all release targets |
+| [`release.yml`](.github/workflows/release.yml) | push tag `v*` | test → build `linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64`, `windows/amd64` → `checksums_<ver>.txt` → GitHub Release with auto-generated notes |
+| [`docs.yml`](.github/workflows/docs.yml) | `website/**` changes | build Docusaurus site; on `main` also deploys to Cloudflare Workers (`dotagen.enolalab.com`) |
+
+**Cutting a release:**
+
+```bash
+git tag v2.9.0
+git push origin v2.9.0
+```
+
+The binaries are named `dotagen_<version>_<os>_<arch>[.exe]`, which is exactly what `install.sh` and `dotagen update` expect.
+
+**Docs deploy secrets** (repository → Settings → Secrets → Actions): `CLOUDFLARE_API_TOKEN` (Workers Scripts: Edit) and `CLOUDFLARE_ACCOUNT_ID`.
 
 ## Acknowledgments
 

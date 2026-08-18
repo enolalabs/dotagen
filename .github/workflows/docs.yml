@@ -6,6 +6,10 @@ on:
   push:
     branches: [main]
     paths: ['website/**', '.github/workflows/docs.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -19,3 +23,33 @@ jobs:
           cache-dependency-path: website/package-lock.json
       - run: npm ci --prefix website
       - run: npm run build --prefix website
+      - uses: actions/upload-artifact@v4
+        with:
+          name: website-build
+          path: website/build
+          retention-days: 3
+
+  deploy:
+    # Only deploy from main (push or manual dispatch), never from PRs.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://dotagen.enolalab.com
+    concurrency:
+      group: docs-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: website-build
+          path: website/build
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: website
+          command: deploy
