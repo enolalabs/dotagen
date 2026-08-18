@@ -116,7 +116,7 @@ dotagen --version
 
 ## Built-in Skills
 
-dotagen ships with **740 official skills** from **55 vendors**, sourced from the [awesome-agent-skills](https://github.com/enolalabs/awesome-agent-skills) registry and [obra/superpowers](https://github.com/obra/superpowers). They are injected automatically when you run `dotagen init`.
+dotagen ships with **841 skills** from **58 vendors** and **203 built-in agents**, sourced from the [awesome-agent-skills](https://github.com/enolalabs/awesome-agent-skills) registry, [obra/superpowers](https://github.com/obra/superpowers), [VoltAgent](https://github.com/VoltAgent/awesome-claude-code-subagents) and [claude-code-game-studios](https://github.com/donchitos/claude-code-game-studios). They are injected automatically when you run `dotagen init`.
 
 All skills are **disabled by default**. You decide which skills to enable and for which platforms.
 
@@ -124,16 +124,17 @@ All skills are **disabled by default**. You decide which skills to enable and fo
 
 | Category | Count |
 |---|---|
-| Developer Tools | 177 |
+| Developer Tools | 191 |
 | Product & Strategy | 137 |
 | AI & Machine Learning | 87 |
-| Testing & QA | 57 |
+| Game Development | 73 |
+| Testing & QA | 60 |
 | Cloud & Infrastructure | 56 |
 | Backend & APIs | 53 |
 | DevOps & Monitoring | 35 |
 | Databases & Data | 24 |
 | Frontend & UI | 23 |
-| Productivity & Collaboration | 21 |
+| Productivity & Collaboration | 32 |
 | Security | 21 |
 | Documents & Content | 18 |
 | Search & Web | 16 |
@@ -142,17 +143,19 @@ All skills are **disabled by default**. You decide which skills to enable and fo
 ### Vendors
 
 <details>
-<summary><strong>View all 55 vendors</strong></summary>
+<summary><strong>View all 58 vendors</strong></summary>
 
 | Vendor | Skills | Category |
 |---|---|---|
 | Microsoft | 132 | Developer Tools |
+| Game Studios | 73 | Game Development |
 | phuryn | 65 | Product & Strategy |
 | testmu-ai | 48 | Testing & QA |
 | deanpeters | 46 | Product & Strategy |
 | OpenAI | 36 | AI & Machine Learning |
 | Sentry | 28 | DevOps & Monitoring |
 | Superpowers | 14 | Developer Tools |
+| Matt Pocock | 26 | Developer Tools |
 | Garry Tan | 27 | Developer Tools |
 | Trail of Bits | 21 | Security |
 | Google | 19 | Cloud & Infrastructure |
@@ -220,13 +223,13 @@ Built-in skills use the `dotagent:` prefix:
 dotagen init
 ```
 
-Creates `.dotagen/` with all 740 built-in skills and a config file where everything is disabled by default:
+Creates `.dotagen/` with all 841 built-in skills and a config file where everything is disabled by default:
 
 ```
 .dotagen/
 ├── config.yaml       # Configuration — set targets to enable skills
 ├── agents/           # Your custom agent definitions (*.md)
-├── skills/           # 740 built-in skill directories (dotagent-*/SKILL.md)
+├── skills/           # 841 built-in skill directories (dotagent-*/SKILL.md)
 ├── .generated/       # Rendered output (git-ignored)
 └── .gitignore
 ```
@@ -304,7 +307,7 @@ Shows the state of each agent/skill on each platform:
 
 | Command | Description |
 |---|---|
-| `dotagen init` | Initialize `.dotagen/` with 740 built-in skills (all disabled) |
+| `dotagen init` | Initialize `.dotagen/` with 841 built-in skills (all disabled) |
 | `dotagen sync [target]` | Render & symlink agents and skills. Optionally specify a target platform |
 | `dotagen status` | Show sync status of all agents and skills |
 | `dotagen clean` | Remove all generated files and symlinks (agents + skills) |
@@ -531,7 +534,7 @@ make clean     # Remove build artifacts
 │       └── static/
 ├── skillsrc/                    # Built-in skills (go:embed)
 │   ├── embed.go
-│   └── data/                    # 740 skill directories
+│   └── data/                    # 841 skill directories
 ├── scripts/
 │   └── fetch-official-skills.py # Skill fetcher from awesome-agent-skills
 ├── go.mod
@@ -541,7 +544,9 @@ make clean     # Remove build artifacts
 
 ## Acknowledgments
 
-- The 740 built-in skills are sourced from the [**awesome-agent-skills**](https://github.com/enolalabs/awesome-agent-skills) registry — a curated collection of official vendor skills from 55 organizations including Microsoft, OpenAI, Anthropic, Google, NVIDIA, Stripe, Cloudflare, and many more — plus [**obra/superpowers**](https://github.com/obra/superpowers).
+- The built-in skills are sourced from the [**awesome-agent-skills**](https://github.com/enolalabs/awesome-agent-skills) registry — a curated collection of official vendor skills from 55 organizations including Microsoft, OpenAI, Anthropic, Google, NVIDIA, Stripe, Cloudflare, and many more — plus [**obra/superpowers**](https://github.com/obra/superpowers) and [**mattpocock/skills**](https://github.com/mattpocock/skills).
+- The 154 `dotagent-voltagent-*` agents come from [**VoltAgent/awesome-claude-code-subagents**](https://github.com/VoltAgent/awesome-claude-code-subagents).
+- The 49 `dotagent-game-studios-*` agents and 73 `dotagent:game-studios:*` skills come from [**donchitos/claude-code-game-studios**](https://github.com/donchitos/claude-code-game-studios) (MIT) — a full virtual game studio (Unity, Unreal, Godot specialists, designers, producers, QA, live-ops) with sprint/gate/release workflows.
 
 ## License
 

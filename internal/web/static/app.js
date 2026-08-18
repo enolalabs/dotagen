@@ -69,6 +69,7 @@ function catLabel(cat) {
         'business-product': 'Business',
         'meta-orchestration': 'Orchestration',
         'research-analysis': 'Research',
+        'game-development': 'Game Dev',
         'Developer Tools': 'Dev Tools',
         'Product & Strategy': 'Product',
         'AI & Machine Learning': 'AI/ML',
@@ -83,6 +84,7 @@ function catLabel(cat) {
         'Documents & Content': 'Documents',
         'Search & Web': 'Search',
         'Mobile & Desktop': 'Mobile',
+        'Game Development': 'Game Dev',
     };
     return labels[cat] || cat || '—';
 }
