@@ -1,17 +1,234 @@
 # 📚 Danh mục Agents & Skills mặc định
 
-> **Phạm vi lịch sử:** Tài liệu này mô tả catalog agents/skills `ds-*` trước đây. Danh sách built-in skills hiện hành, số lượng và cách bật `dotagent-*` được duy trì trong [README](../README.md#built-in-skills).
+> 🇬🇧 English version: [CATALOG.md](CATALOG.md)
 
-> Tài liệu giới thiệu toàn bộ **144 agents** và **16 skills** được tích hợp sẵn trong dotagen.
-> Tất cả đều bị tắt theo mặc định — bạn chọn bật agent/skill nào và cho nền tảng nào trong `config.yaml`.
+> **Phạm vi:** Tài liệu này mô tả chi tiết các bộ agent/skill được tích hợp sẵn: bộ **Game Studios** (`dotagent-game-studios-*`, mới) và catalog `da-*`/`ds-*` trước đây (VoltAgent + mattpocock). Danh sách đầy đủ 842 built-in skills từ 59 vendor, số lượng theo category và cách bật `dotagent-*` được duy trì trong [README](../README.md#built-in-skills).
+
+> Tất cả agent/skill đều bị tắt theo mặc định — bạn chọn bật cái nào và cho nền tảng nào trong `config.yaml` hoặc qua Web Dashboard.
 
 ---
 
-## 🛠 Skills (Slash Commands)
+## 🎮 Game Studios (49 agents · 73 skills)
+
+Bộ **Game Studios** được import từ [donchitos/claude-code-game-studios](https://github.com/donchitos/claude-code-game-studios) (MIT) — một "studio game ảo" đầy đủ vai trò: chuyên gia engine (Unity, Unreal, Godot), lập trình viên gameplay/engine/network/AI/UI, designer, producer, QA, release, live-ops, narrative, audio, art. Kèm theo là các quy trình sprint / gate / release theo kiểu studio thật.
+
+- **Agent:** `dotagent-game-studios-<tên>` (category `game-development`)
+- **Skill:** thư mục `dotagent-game-studios-<tên>/`, frontmatter `dotagent:game-studios:<tên>` (category `Game Development`, vendor `game-studios`)
+- Import lại từ upstream bằng `python3 scripts/import-game-studios.py`.
+
+> ⚠️ Nhiều skill trong bộ này giả định cấu trúc dự án của CCGS (`design/`, `production/`, `.claude/rules/*`, các template trong `.claude/docs/templates/*`). Hãy chạy `/start` hoặc `/adopt` trước để khởi tạo/kiểm tra scaffolding.
+
+### 🎯 Ban lãnh đạo & định hướng (5 agents)
+
+| Agent | Mô tả | Sử dụng khi nào |
+|---|---|---|
+| **`creative-director`** | Thẩm quyền sáng tạo cao nhất: vision, tone, thẩm mỹ, giải quyết xung đột thiết kế | Cần quyết định vision game, chốt hướng thẩm mỹ, phân xử tranh luận thiết kế |
+| **`technical-director`** | Quyết định kỹ thuật cấp cao: kiến trúc engine, lựa chọn công nghệ, chiến lược hiệu năng, rủi ro kỹ thuật | Chọn engine/tech stack, lập kiến trúc tổng thể, đánh giá rủi ro kỹ thuật |
+| **`lead-programmer`** | Kiến trúc mức code, coding standard, code review, phân việc cho programmer chuyên biệt | Cần review code, thiết kế API, chiến lược refactor, dịch design thành cấu trúc code |
+| **`producer`** | Sprint planning, milestone, quản lý rủi ro, đàm phán scope, điều phối liên phòng ban | Lập sprint, theo dõi milestone, xử lý scope creep |
+| **`art-director`** | Bản sắc hình ảnh: style guide, art bible, chuẩn asset, palette, pipeline sản xuất art | Cần art bible, chuẩn hóa asset, review UI/UX visual |
+
+### 🎲 Thiết kế game (7 agents)
+
+| Agent | Mô tả | Sử dụng khi nào |
+|---|---|---|
+| **`game-designer`** | Thiết kế cơ chế và hệ thống: core loop, progression, combat, economy, trải nghiệm người chơi | Cần thiết kế/đánh giá cơ chế gameplay, viết GDD |
+| **`systems-designer`** | Thiết kế chi tiết từng subsystem: công thức combat, đường cong progression, crafting, status effect | Cần spec toán học/công thức cho một hệ thống cụ thể |
+| **`economy-designer`** | Kinh tế tài nguyên, loot, progression curve, in-game market | Thiết kế loot table, faucet/sink, cân bằng kinh tế |
+| **`level-designer`** | Thiết kế không gian, bố trí encounter, pacing, environmental storytelling | Cần layout level, kế hoạch pacing, hướng dẫn kể chuyện qua môi trường |
+| **`live-ops-designer`** | Chiến lược nội dung hậu phát hành: sự kiện mùa, battle pass, cadence, retention | Lập kế hoạch live service, sự kiện, retention mechanics |
+| **`ux-designer`** | UX flow, interaction design, accessibility, information architecture, input | Thiết kế user flow, HUD, wireframe, xử lý input |
+| **`accessibility-specialist`** | Đảm bảo game chơi được với đông đảo người chơi nhất; chuẩn accessibility, review UI | Cần audit accessibility, tùy chọn hỗ trợ (colorblind, remap, subtitle…) |
+
+### 💻 Lập trình (9 agents)
+
+| Agent | Mô tả | Sử dụng khi nào |
+|---|---|---|
+| **`gameplay-programmer`** | Hiện thực cơ chế game, player system, combat, tính năng tương tác | Cần code cơ chế đã được thiết kế |
+| **`engine-programmer`** | Hệ thống lõi engine: rendering, physics, memory, resource loading, scene management | Làm việc ở tầng engine/framework |
+| **`ai-programmer`** | AI game: behavior tree, state machine, pathfinding, perception, hành vi NPC | Xây AI cho enemy/NPC, hệ thống ra quyết định |
+| **`network-programmer`** | Multiplayer networking: state replication, lag compensation, matchmaking, protocol | Xây netcode, đồng bộ state, matchmaking |
+| **`ui-programmer`** | Hệ thống UI: menu, HUD, inventory, dialogue box, UI framework | Hiện thực màn hình/HUD từ UX spec |
+| **`tools-programmer`** | Công cụ nội bộ: editor extension, content authoring tool, debug utility, pipeline automation | Cần tool cho designer/artist, tự động hóa pipeline |
+| **`technical-artist`** | Cầu nối art–engineering: shader, VFX, tối ưu rendering, art pipeline tool | Cần shader/VFX, tối ưu hình ảnh, tool cho artist |
+| **`prototyper`** | Prototype nhanh (concept prototype sau brainstorm, feature prototype trước GDD) | Cần chứng minh ý tưởng vui trước khi đầu tư thiết kế đầy đủ |
+| **`devops-engineer`** | Build pipeline, CI/CD, version control workflow, deployment | Cần build script, CI, quy trình branch |
+
+### 🎮 Chuyên gia engine (15 agents)
+
+| Agent | Mô tả | Sử dụng khi nào |
+|---|---|---|
+| **`unity-specialist`** | Thẩm quyền về pattern/API/tối ưu Unity; MonoBehaviour vs DOTS | Mọi câu hỏi Unity tổng quát |
+| **`unity-dots-specialist`** | DOTS/ECS: Entity Component System, Jobs, Burst | Cần hiệu năng data-oriented trong Unity |
+| **`unity-shader-specialist`** | Shader Graph, HLSL, VFX Graph, URP/HDRP | Tùy biến rendering trong Unity |
+| **`unity-ui-specialist`** | UI Toolkit (UXML/USS), UGUI, data binding, hiệu năng UI runtime | Xây UI Unity |
+| **`unity-addressables-specialist`** | Addressables: group, load/unload, memory, catalog, remote content | Quản lý asset/nội dung tải động trong Unity |
+| **`unreal-specialist`** | Thẩm quyền về pattern/API/tối ưu Unreal; Blueprint vs C++ | Mọi câu hỏi Unreal tổng quát |
+| **`ue-blueprint-specialist`** | Kiến trúc Blueprint, ranh giới Blueprint/C++, tối ưu graph | Giữ Blueprint dễ bảo trì, quyết định chuyển sang C++ |
+| **`ue-gas-specialist`** | Gameplay Ability System: ability, effect, attribute set, tag, prediction | Hiện thực combat/ability bằng GAS |
+| **`ue-replication-specialist`** | Networking Unreal: property replication, RPC, prediction, relevancy, bandwidth | Multiplayer trên Unreal |
+| **`ue-umg-specialist`** | UMG/CommonUI: widget, data binding, input routing, styling | Xây UI Unreal |
+| **`godot-specialist`** | Thẩm quyền Godot; GDScript vs C# vs GDExtension | Mọi câu hỏi Godot tổng quát |
+| **`godot-gdscript-specialist`** | GDScript: static typing, pattern, signal, coroutine, tối ưu | Viết/refactor GDScript |
+| **`godot-csharp-specialist`** | C# trong Godot 4: .NET pattern, export attribute, signal delegate, async | Dùng C# trong Godot |
+| **`godot-gdextension-specialist`** | GDExtension: binding C/C++/Rust, tối ưu native | Cần code native cho Godot |
+| **`godot-shader-specialist`** | Godot shading language, visual shader, material, particle, post-processing | Tùy biến rendering trong Godot |
+
+### 📖 Narrative & nội dung (4 agents)
+
+| Agent | Mô tả | Sử dụng khi nào |
+|---|---|---|
+| **`narrative-director`** | Kiến trúc câu chuyện, world-building, nhân vật, chiến lược dialogue | Lập story arc, phát triển nhân vật |
+| **`world-builder`** | Lore chi tiết: phe phái, văn hóa, lịch sử, địa lý, sinh thái | Xây dựng thế giới và quy tắc của nó |
+| **`writer`** | Dialogue, lore entry, mô tả item, text môi trường | Cần văn bản người chơi nhìn thấy |
+| **`localization-lead`** | Kiến trúc i18n, string table, locale testing, pipeline dịch | Cần hệ thống đa ngôn ngữ, quy trình dịch |
+
+### 🔊 Audio (2 agents)
+
+| Agent | Mô tả | Sử dụng khi nào |
+|---|---|---|
+| **`audio-director`** | Bản sắc âm thanh: music direction, triết lý sound design, chiến lược implementation, mix | Định hướng âm nhạc/âm thanh tổng thể |
+| **`sound-designer`** | Spec chi tiết cho SFX, audio event, tham số mix | Cần spec sheet SFX, danh sách audio event |
+
+### 🧪 QA, hiệu năng, bảo mật, phát hành & cộng đồng (7 agents)
+
+| Agent | Mô tả | Sử dụng khi nào |
+|---|---|---|
+| **`qa-lead`** | Chiến lược test, triage bug, quality gate, quy trình test | Lập test plan, đánh giá severity, gate release |
+| **`qa-tester`** | Test case chi tiết, bug report, checklist | Viết test case, regression checklist, báo bug |
+| **`performance-analyst`** | Profiling, tìm bottleneck, đề xuất tối ưu, theo dõi metric | Game chậm, cần budget hiệu năng |
+| **`security-engineer`** | Chống cheat, exploit, rò rỉ dữ liệu; review lỗ hổng, bảo vệ save | Cần anti-cheat, bảo mật save/network |
+| **`release-manager`** | Pipeline release: checklist chứng nhận, submit store, yêu cầu platform, versioning | Chuẩn bị phát hành, submit lên store |
+| **`analytics-engineer`** | Telemetry, tracking hành vi người chơi, A/B test, data pipeline | Cần đo lường/phân tích người chơi |
+| **`community-manager`** | Giao tiếp với người chơi: patch note, social, thu thập feedback, triage bug từ cộng đồng | Viết patch note, quản lý phản hồi cộng đồng |
+
+### 🛠 Skills — Khởi động & khám phá (6 skills)
+
+| Skill | Mô tả | Sử dụng khi nào |
+|---|---|---|
+| **`start`** | Onboarding lần đầu — hỏi bạn đang ở đâu rồi dẫn tới workflow phù hợp | Mới bắt đầu, chưa biết làm gì |
+| **`help`** | Phân tích việc đã làm và câu hỏi của bạn, gợi ý bước kế tiếp | "Tiếp theo nên làm gì?", đang bí |
+| **`adopt`** | Onboarding dự án brownfield: audit artifact hiện có theo template, phân loại thiếu sót | Đưa dự án đang có vào quy trình CCGS |
+| **`onboard`** | Sinh tài liệu onboarding cho contributor/agent mới | Có người/agent mới tham gia dự án |
+| **`project-stage-detect`** | Tự phát hiện giai đoạn dự án, thiếu sót, và gợi ý bước tiếp | "Dự án đang ở đâu?" |
+| **`setup-engine`** | Cấu hình engine + phiên bản, ghim vào CLAUDE.md, bổ sung tài liệu tham chiếu engine | Ngay sau brainstorm, trước prototype |
+
+### 🎲 Skills — Concept & thiết kế (12 skills)
+
+| Skill | Mô tả | Sử dụng khi nào |
+|---|---|---|
+| **`brainstorm`** | Ý tưởng game có hướng dẫn: từ con số 0 đến concept document có cấu trúc | Bắt đầu một game mới |
+| **`prototype`** | Concept prototype để xác nhận ý tưởng đáng thiết kế trước khi viết GDD | Ngay sau `/brainstorm` + `/setup-engine` |
+| **`map-systems`** | Phân rã concept thành các hệ thống, map dependency, ưu tiên thứ tự thiết kế, tạo systems index | Sau khi có concept, trước khi viết GDD |
+| **`design-system`** | Viết GDD cho một hệ thống theo từng section có hướng dẫn | Cần GDD đầy đủ cho một hệ thống |
+| **`quick-design`** | Spec thiết kế nhẹ cho thay đổi nhỏ (tuning, cơ chế phụ, balance) | GDD hệ thống đã có, chỉ cần điều chỉnh |
+| **`design-review`** | Review GDD về tính đầy đủ, nhất quán, khả thi | Trước khi giao GDD cho lập trình |
+| **`review-all-gdds`** | Review chéo toàn bộ GDD: mâu thuẫn, tham chiếu cũ | Trước milestone thiết kế / pre-production |
+| **`consistency-check`** | Quét GDD so với entity registry để phát hiện lệch số liệu giữa tài liệu | Sau khi sửa nhiều GDD |
+| **`propagate-design-change`** | Khi GDD thay đổi, tìm ADR/traceability bị ảnh hưởng, tạo change report | Vừa sửa GDD đã được kiến trúc hóa |
+| **`balance-check`** | Phân tích file data/công thức để tìm outlier, progression hỏng, chiến lược thoái hóa | Sau khi sửa balance data |
+| **`ux-design`** | Viết UX spec cho screen/flow/HUD theo section | Cần spec UX trước khi làm UI |
+| **`ux-review`** | Kiểm tra UX spec/HUD về đầy đủ, accessibility, khớp GDD, sẵn sàng hiện thực | Trước khi giao UX spec cho UI programmer |
+
+### 🎨 Skills — Art & asset (3 skills)
+
+| Skill | Mô tả | Sử dụng khi nào |
+|---|---|---|
+| **`art-bible`** | Viết Art Bible theo section — spec bản sắc hình ảnh gate mọi sản xuất asset | Sau brainstorm, trước sản xuất art |
+| **`asset-spec`** | Sinh spec hình ảnh + prompt AI generation cho từng asset từ GDD/level doc/character profile | Cần brief asset cho artist/AI |
+| **`asset-audit`** | Audit asset về naming, size budget, format, pipeline; tìm asset mồ côi | Trước milestone, sau import asset lớn |
+
+### 🏛 Skills — Kiến trúc & lập kế hoạch (7 skills)
+
+| Skill | Mô tả | Sử dụng khi nào |
+|---|---|---|
+| **`create-architecture`** | Viết master architecture document theo section, đọc toàn bộ GDD/ADR/engine | Sau khi GDD được duyệt |
+| **`architecture-decision`** | Tạo ADR: bối cảnh, phương án, hệ quả | Có quyết định kỹ thuật quan trọng |
+| **`architecture-review`** | Kiểm tra kiến trúc so với GDD, dựng traceability matrix | Sau create-architecture, trước create-epics |
+| **`create-control-manifest`** | Sinh bảng quy tắc phẳng cho programmer: phải làm / không được làm, theo hệ thống | Sau khi kiến trúc hoàn tất |
+| **`create-epics`** | Dịch GDD + kiến trúc thành epic (mỗi module một epic) | Bắt đầu production planning |
+| **`create-stories`** | Chia một epic thành story file có thể hiện thực, nhúng requirement GDD/ADR | Trước sprint |
+| **`reverse-document`** | Sinh tài liệu design/kiến trúc từ code có sẵn | Dự án thiếu tài liệu |
+
+### 🏃 Skills — Sprint & production (11 skills)
+
+| Skill | Mô tả | Sử dụng khi nào |
+|---|---|---|
+| **`sprint-plan`** | Tạo/cập nhật sprint plan dựa trên milestone, việc đã xong, capacity | Đầu sprint |
+| **`sprint-status`** | Snapshot tiến độ sprint nhanh, đánh giá burndown | Giữa sprint |
+| **`story-readiness`** | Kiểm tra story đã đủ điều kiện hiện thực (GDD, ADR, engine note, acceptance criteria) | Trước khi bắt đầu story |
+| **`dev-story`** | Đọc story và hiện thực: nạp đầy đủ context, route tới programmer phù hợp | Làm một story |
+| **`story-done`** | Review hoàn tất story: kiểm từng acceptance criterion, lệch GDD/ADR | Kết thúc story |
+| **`estimate`** | Ước lượng effort theo độ phức tạp, dependency, velocity, rủi ro | Cần estimate có độ tin cậy |
+| **`scope-check`** | Phát hiện scope creep so với kế hoạch gốc | Nghi ngờ phình scope |
+| **`gate-check`** | Kiểm tra điều kiện chuyển giai đoạn → PASS/CONCERNS/FAIL | Trước khi sang phase mới |
+| **`milestone-review`** | Review milestone: hoàn thiện, chất lượng, rủi ro, go/no-go | Cuối milestone |
+| **`retrospective`** | Retro sprint/milestone: velocity, blocker, pattern | Cuối sprint |
+| **`vertical-slice`** | Xây build end-to-end chất lượng production để xác nhận game loop | Pre-production |
+
+### 🧑‍💻 Skills — Code & kỹ thuật (6 skills)
+
+| Skill | Mô tả | Sử dụng khi nào |
+|---|---|---|
+| **`code-review`** | Review kiến trúc & chất lượng cho file/tập file | Trước khi merge |
+| **`tech-debt`** | Theo dõi, phân loại, ưu tiên nợ kỹ thuật; duy trì debt register | Định kỳ / trước milestone |
+| **`perf-profile`** | Quy trình profiling có cấu trúc, so với budget, đề xuất tối ưu | Game không đạt hiệu năng mục tiêu |
+| **`security-audit`** | Audit lỗ hổng: save tampering, cheat, network exploit, lộ dữ liệu | Trước release |
+| **`localize`** | Pipeline localization đầy đủ: quét string cứng, string table, validate, brief dịch giả | Chuẩn bị đa ngôn ngữ |
+| **`content-audit`** | So sánh số lượng nội dung GDD với nội dung đã hiện thực | Theo dõi tiến độ nội dung |
+
+### 🧪 Skills — Testing & QA (13 skills)
+
+| Skill | Mô tả | Sử dụng khi nào |
+|---|---|---|
+| **`test-setup`** | Scaffold test framework + CI cho engine của dự án | Bắt đầu dự án |
+| **`test-helpers`** | Sinh thư viện helper test đặc thù engine | Sau test-setup |
+| **`qa-plan`** | Sinh QA test plan cho sprint/feature | Đầu sprint hoặc feature lớn |
+| **`smoke-check`** | Gate smoke test critical path trước khi giao QA | Trước QA hand-off |
+| **`regression-suite`** | Map coverage với critical path GDD, tìm bug đã sửa thiếu regression test | Duy trì bộ regression |
+| **`test-flakiness`** | Phát hiện test không ổn định từ log CI | CI đỏ ngẫu nhiên |
+| **`test-evidence-review`** | Review chất lượng test file và evidence thủ công | Trước gate/release |
+| **`soak-test`** | Sinh protocol soak test cho phiên chơi dài | Tìm leak/degradation chậm |
+| **`playtest-report`** | Template/phân tích báo cáo playtest | Sau playtest |
+| **`bug-report`** | Tạo bug report có cấu trúc, đủ bước tái hiện | Gặp bug |
+| **`bug-triage`** | Đọc toàn bộ bug, đánh giá lại priority/severity, gán sprint | Định kỳ triage |
+| **`skill-test`** / **`skill-improve`** | Kiểm tra & cải thiện chính các skill CCGS (linter, spec, audit) | Đang chỉnh sửa skill |
+
+### 🚀 Skills — Release & live-ops (6 skills)
+
+| Skill | Mô tả | Sử dụng khi nào |
+|---|---|---|
+| **`release-checklist`** | Checklist pre-release: build, certification, store metadata | Chuẩn bị release |
+| **`launch-checklist`** | Kiểm tra sẵn sàng launch mọi phòng ban + go/no-go | Trước ngày launch |
+| **`hotfix`** | Quy trình sửa khẩn cấp có audit trail, bỏ qua sprint | Lỗi nghiêm trọng trên production |
+| **`day-one-patch`** | Chuẩn bị patch ngày đầu: scope, ưu tiên, hiện thực, QA gate | Sau gold, trước launch |
+| **`changelog`** | Sinh changelog nội bộ + người chơi từ git/sprint/design | Cuối sprint/release |
+| **`patch-notes`** | Patch note cho người chơi từ git history/changelog | Mỗi bản cập nhật |
+
+### 👥 Skills — Điều phối team (9 skills)
+
+Mỗi skill `team-*` điều phối một nhóm agent làm việc cùng nhau theo pipeline hoàn chỉnh.
+
+| Skill | Nhóm agent | Sử dụng khi nào |
+|---|---|---|
+| **`team-combat`** | game-designer, gameplay-programmer, ai-programmer, technical-artist, sound-designer, qa-tester | Thiết kế → hiện thực → test một hệ thống combat |
+| **`team-level`** | level-designer, narrative-director, world-builder, art-director, systems-designer, qa-tester | Xây một area/level hoàn chỉnh |
+| **`team-narrative`** | narrative-director, writer, world-builder, level-designer | Nội dung câu chuyện & lore |
+| **`team-ui`** | ux-designer, ui-programmer, art-director, qa-tester (tích hợp `/ux-design`, `/ux-review`) | UX spec → visual → hiện thực → polish |
+| **`team-audio`** | audio-director, sound-designer, technical-artist, gameplay-programmer | Pipeline audio từ định hướng đến implementation |
+| **`team-polish`** | performance-analyst, technical-artist, sound-designer, qa-tester | Tối ưu & polish một feature |
+| **`team-qa`** | qa-lead, qa-tester | Chu trình test đầy đủ |
+| **`team-release`** | release-manager, qa-lead, devops-engineer, producer | Từ release candidate đến deploy |
+| **`team-live-ops`** | live-ops-designer, economy-designer, analytics-engineer, community-manager | Kế hoạch nội dung hậu phát hành |
+
+
+---
+
+## 🛠 Skills (Slash Commands) — bộ mattpocock
 
 Skills là các **quy trình làm việc có cấu trúc** (slash command) mà agent sẽ tuân theo khi được kích hoạt. Khác với agent (định nghĩa *agent là ai*), skill định nghĩa *agent làm gì theo quy trình nào*.
 
-Mỗi skill được lưu dưới dạng thư mục `ds-<tên>/SKILL.md`, có thể kèm thư mục `references/` chứa các file tham chiếu bổ sung.
+Mỗi skill được lưu dưới dạng thư mục `dotagent-mattpocock-<tên>/SKILL.md` (tên `ds-*` bên dưới là tên cũ, hiện tương ứng `dotagent-mattpocock-*`), có thể kèm thư mục `references/` chứa các file tham chiếu bổ sung.
 
 ### 🔧 Engineering (9 skills)
 
@@ -46,11 +263,11 @@ Mỗi skill được lưu dưới dạng thư mục `ds-<tên>/SKILL.md`, có th
 
 ---
 
-## 🤖 Agents
+## 🤖 Agents — bộ VoltAgent
 
 Agents là các **chuyên gia ảo** với vai trò và chuyên môn cụ thể. Mỗi agent chứa system prompt hướng dẫn AI hành xử theo đúng vai trò khi được kích hoạt.
 
-Mỗi agent được lưu dưới dạng file `da-<tên>.md` với frontmatter YAML (description, category) và nội dung Markdown.
+Mỗi agent được lưu dưới dạng file `dotagent-voltagent-<tên>.md` với frontmatter YAML (description, category) và nội dung Markdown. Tên trong bảng là tên rút gọn.
 
 ### 💼 Business & Product (12 agents)
 
@@ -275,16 +492,16 @@ Các agent cho các lĩnh vực chuyên biệt.
 ```yaml
 # .dotagen/config.yaml
 agents:
-  da-backend-developer:
+  dotagent-game-studios-lead-programmer:
     targets: all          # Bật cho tất cả nền tảng
-  da-code-reviewer:
+  dotagent-voltagent-code-reviewer:
     targets:
       - claude-code       # Chỉ Claude Code
 
 skills:
-  ds-diagnose:
+  dotagent-game-studios-gate-check:
     targets: all
-  ds-tdd:
+  dotagent-superpowers-test-driven-development:
     targets:
       - claude-code
       - cursor
@@ -315,5 +532,8 @@ dotagen serve   # Mở dashboard tại http://localhost:7890
 
 ## 📝 Nguồn gốc
 
-- **144 agents** được lấy từ dự án [VoltAgent](https://github.com/VoltAgent/voltagent)
-- **16 skills** được lấy từ [mattpocock/skills](https://github.com/mattpocock/skills)
+- **49 agents + 73 skills** Game Studios lấy từ [donchitos/claude-code-game-studios](https://github.com/donchitos/claude-code-game-studios) (MIT)
+- **154 agents** `dotagent-voltagent-*` lấy từ [VoltAgent/awesome-claude-code-subagents](https://github.com/VoltAgent/awesome-claude-code-subagents)
+- **26 skills** `dotagent-mattpocock-*` lấy từ [mattpocock/skills](https://github.com/mattpocock/skills)
+- **14 skills** `dotagent-superpowers-*` lấy từ [obra/superpowers](https://github.com/obra/superpowers)
+- Các skill vendor còn lại lấy từ registry [awesome-agent-skills](https://github.com/enolalabs/awesome-agent-skills); [Hallmark](https://github.com/Nutlope/hallmark) là snapshot MIT riêng
