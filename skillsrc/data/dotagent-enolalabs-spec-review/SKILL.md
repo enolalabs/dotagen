@@ -1,224 +1,178 @@
 ---
 name: "dotagent:enolalabs:spec-review"
-description: "Review a spec document from multiple software development perspectives using specialized subagents. Use after brainstorming produces a spec, before writing-plans."
+description: "Run a risk-based, token-efficient review of a product or architecture spec. Defaults to focused review and uses differential re-review after changes."
 category: "Developer Tools"
 vendor: "enolalabs"
 ---
 
 # Spec Review
 
-Multi-perspective spec review using specialized subagents. Each reviewer examines the spec from their domain expertise, then findings are consolidated into a verdict with actionable fixes.
+Review a spec for decision completeness and material delivery risk. Prefer the smallest review scope that can answer: **is the problem, boundary, and acceptance contract clear enough to plan?**
 
 ## When to Use
 
-After `superpowers:brainstorming` produces a spec file, before invoking `superpowers:writing-plans`.
+Use after brainstorming produces a spec and before writing an implementation plan.
 
-**Typical flow:**
-```
+```text
 brainstorming → spec-review → writing-plans → plan-review → implementation
 ```
 
+## Review Modes
+
+| Mode | Use when | Default reviewers | Context |
+|---|---|---|---|
+| **Focused** | First review of a normal spec or phase | Technical + at most one highest-risk specialist | Target phase/sections and directly relevant repository context |
+| **Full** | Explicit request, or a one-time release/foundation contract whose cross-cutting risks cannot be covered phase-by-phase | All relevant groups, at most one reviewer per group | Entire spec and required supporting docs |
+| **Differential** | Any re-review after edits | Technical + only specialists that own unresolved findings, maximum two reviewers | Changed sections plus unresolved findings |
+
+`Focused` is the default for an initial review. `Differential` is the default whenever the user says **re-review**, **review again**, or asks whether a revised spec is ready. Never repeat stack or reviewer-selection questions during the same review chain unless the scope materially changes.
+
 ## Process
 
-### Step 1: Locate the Spec
+### 1. Locate and Bound the Review
 
-- Auto-scan `docs/superpowers/specs/` for `*.md` files
-- If exactly one spec found → use it
-- If multiple found → ask user which one (multiple-choice with file dates)
-- If none found → ask user for the path
+- Use an explicit path from the user when present.
+- Otherwise scan `docs/superpowers/specs/`. Ask only when multiple plausible targets remain.
+- If the spec contains phases, default to the phase being planned next plus global invariants it depends on.
+- Read only supporting documents directly referenced by the reviewed sections.
+- Record the target path, reviewed sections, mode, and current commit.
 
-Read the spec content. This is the document under review.
+For a differential review, locate the prior report and comparison base. Prefer the report's recorded base, then the pre-fix commit, current worktree diff, or sections identified in conversation. If no reliable diff exists, inspect only unresolved findings and their referenced sections. Do not silently fall back to a full review.
 
-### Step 2: Detect Tech Stack
+### 2. Detect Context and Select Risk Reviewers
 
-Follow the detection rules in [subagent-mapping.md](subagent-mapping.md).
+Follow [subagent-mapping.md](subagent-mapping.md). Infer the stack and product type from the repository and spec. Ask for confirmation only if uncertainty would change a material conclusion. Reuse prior answers.
 
-Scan the project root for config files (`go.mod`, `package.json`, `requirements.txt`, `Cargo.toml`, `*.csproj`, `pom.xml`, `Gemfile`, etc.) and scan the spec content for technology keywords.
+Technical review is the default anchor. Select at most one additional group for the highest current risk:
 
-Present the detected tech stack to the user for confirmation:
+- Product: user-visible flows, business outcomes, compatibility, or scope uncertainty.
+- Security: authentication, authorization, secrets, multi-tenancy, untrusted input, or sensitive data.
+- Performance: explicit scale/SLOs, concurrency, large data, or resource bounds.
+- Process: deployment, migrations, rollback, lifecycle, availability, or release gates.
 
-```
-Detected tech stack:
-  Language:  Go (go.mod found)
-  Frontend:  React (package.json, "React" in spec)
-  Database:  PostgreSQL (mentioned in spec)
-  Infra:     Kubernetes (mentioned in spec)
+Respect an explicit user choice of mode or groups. Otherwise do not ask a separate reviewer-selection question.
 
-Is this correct?
-A) ⭐ Yes, proceed with these (recommended)
-B) No, let me adjust
-```
+### 3. Apply the Spec Sufficiency Standard
 
-### Step 3: Ask User Which Review Groups
+A spec is ready for planning when it makes material decisions explicit enough that plan authors do not have to invent product or architecture policy. As relevant to its scope, it should define:
 
-Present the 5 review groups as a multiple-choice question:
+- problem, users/actors, goals, and non-goals;
+- user or system flows and observable outcomes;
+- boundaries, ownership, dependencies, and durable invariants;
+- failure behavior and security/trust boundaries;
+- performance/operational constraints where they affect architecture;
+- measurable acceptance criteria;
+- true open decisions, with owner or decision point.
 
-```
-Which review groups to run?
+A spec should not be required to contain implementation file paths, full type definitions, SQL, production code, exhaustive test bodies, or library-level mechanics unless those details are themselves architectural contracts. Push implementation choices into the plan rather than expanding the spec.
 
-A) ⭐ All 5 groups (recommended)
-   Example: Technical + Performance + Security + Process + Product — comprehensive review
+An ambiguity is a finding only when two reasonable interpretations would change behavior, compatibility, architecture, risk, or acceptance. Missing generic sections are not automatically Critical.
 
-B) Technical + Security only
-   Example: Focus on architecture soundness and vulnerability detection
+### 4. Dispatch the Minimum Useful Reviewers
 
-C) Security + Performance only
-   Example: Focus on bottlenecks and attack vectors
+Read the selected `reviewers/<group>.md` templates and dispatch only when subagents are available and allowed.
 
-D) Let me pick individually
-   Example: I'll select specific groups from the full list
+- Focused: maximum two reviewers.
+- Differential: maximum two reviewers; one is preferred for localized edits.
+- Full: maximum one reviewer per selected group.
+- Use one best-fit agent per group, not a generic and specialist reviewer for the same concern.
 
-Subagents that will be dispatched (auto-selected for your Go + React project):
-  Technical:   golang-pro, react-specialist
-  Performance: performance-engineer
-  Security:    security-auditor
-  Process:     devops-engineer
-  Product:     product-manager
-```
+When reviewers share the filesystem, pass the spec path, assigned sections, mode, comparison base, and unresolved finding IDs. Do not paste the full spec into every prompt. Reviewers should read only their scope and direct references.
 
-If the user picks D, show all 5 groups individually with checkboxes.
+If subagents are unavailable, perform the same bounded review directly.
 
-### Step 4: Dispatch Reviewer Subagents
+### 5. Consolidate and Calibrate Findings
 
-For each selected review group, dispatch a subagent:
+Every finding needs evidence, a precise section reference, impact, and the smallest adequate change. Deduplicate shared root causes before counting them.
 
-1. Read the reviewer prompt template from `reviewers/<group>.md`
-2. Fill in the spec content and tech stack context
-3. Dispatch using the subagent type determined in Step 2
-4. If the specialized subagent is not available, use `general-purpose`
+Severity means:
 
-**Dispatch sequentially or in parallel** depending on platform capabilities. Collect all results before proceeding.
+- **Critical:** the core problem/actor/outcome is contradictory or infeasible; a required behavior is absent; trust/data boundaries permit a credible severe failure; or planning would require inventing a fundamental product/architecture decision.
+- **Important:** a material ambiguity, missing acceptance criterion, likely rework, or meaningful security/performance/operational risk in the current scope.
+- **Minor:** non-blocking clarity, polish, or optional hardening.
 
-Each subagent receives:
-- Its role description from the reviewer template
-- The full spec content
-- The detected tech stack
-- Instructions to output findings by severity (Critical / Important / Minor)
+Do not report generic best practices, future-phase features, or missing details that properly belong in implementation planning.
 
-### Step 5: Consolidate Report
+Each reviewer may return at most three Critical/Important findings and two Minor findings. Ask for the highest-impact independent findings and omit low-confidence speculation. The consolidated report should normally contain no more than five blockers. If more independent blockers exist, state that the review is truncated, return `Needs Changes`, and review the remainder only after the first batch is fixed.
 
-Merge all subagent findings into a single review report. See Output Format below.
+During differential review:
 
-Calculate the overall verdict:
+- classify prior blockers as `resolved`, `partially resolved`, or `open`;
+- add a new blocker only when introduced/exposed by the edit or required to avoid an unsafe approval;
+- do not reopen accepted product/architecture decisions without new evidence;
+- do not repeat unchanged Minor findings.
+
+### 6. Decide the Verdict
 
 | Verdict | Condition |
-|---------|-----------|
-| **Approved** | 0 Critical, 0 Important |
-| **Needs Changes** | Any Critical or Important findings |
-| **Rejected** | Fundamental architecture or design flaws |
+|---|---|
+| **Approved** | No blocking findings remain; the spec is ready for planning |
+| **Approved with Follow-ups** | No blockers; only non-blocking follow-ups remain |
+| **Needs Changes** | Localized blocking findings remain |
+| **Rejected** | The problem, scope, or architecture needs fundamental rework |
 
-### Step 6: Present Verdict and Report
+Mark every Critical/Important finding `Blocking: yes|no`. Critical is normally blocking. Important blocks only when the issue must be decided before planning the reviewed scope.
 
-Display the consolidated report to the user, then save it:
+### 7. Save a Compact Report
 
-```
+Save to:
+
+```text
 docs/superpowers/reviews/YYYY-MM-DD-<topic>-spec-review.md
 ```
 
-### Step 7: Fix Flow (if Needs Changes or Rejected)
-
-For each Critical and Important finding, in priority order:
-
-**If the fix is clear and unambiguous:**
-- Apply the fix directly to the spec file
-
-**If there are multiple valid approaches:**
-Ask the user with a multiple-choice question. Format:
-
-```
-Finding: [finding title]
-[section reference in spec]
-
-Which approach do you prefer?
-
-A) ⭐ [Recommended option] (recommended)
-   Example: [concrete example of this approach]
-   Best for: [when to choose this]
-
-B) [Alternative option]
-   Example: [concrete example]
-   Best for: [when to choose this]
-
-C) [Another alternative]
-   Example: [concrete example]
-   Best for: [when to choose this]
-
-D) Skip this finding
-   Example: Leave the spec as-is, address during implementation
-```
-
-Rules for multiple-choice questions:
-- Always mark the recommended option with a star icon
-- Every option must have a concrete example
-- Limit to 3-4 options (plus skip)
-- If the user selects skip, note it and move on
-
-**After all fixes are applied:**
-- Commit the updated spec with message: `fix: apply spec review findings`
-- Offer to re-run the review (user's choice)
-
-### Step 8: Transition
-
-If verdict is Approved:
-- Suggest proceeding to `superpowers:writing-plans`
-
-If verdict is Needs Changes and fixes were applied:
-- Offer to re-review, or proceed if user is satisfied
-
-## Output Format
+Use this structure:
 
 ```markdown
 # Spec Review: [Topic]
 
-**Date:** YYYY-MM-DD
-**Spec:** `path/to/spec.md`
-**Tech Stack:** Go, React, PostgreSQL, Kubernetes
-**Reviewers:** golang-pro, react-specialist, performance-engineer, security-auditor, devops-engineer, product-manager
+**Mode:** Focused | Full | Differential
+**Scope:** [phase/sections]
+**Spec:** `path`
+**Base:** [commit/report, for differential review]
+**Reviewers:** [groups/agents]
 
----
+## Verdict: [verdict]
 
-## Verdict: [Approved / Needs Changes / Rejected]
+[One-paragraph summary]
 
-**Summary:** [1-2 sentence overall assessment]
+## Blocking Findings
 
-**Finding counts:** X Critical, Y Important, Z Minor
+1. **[ID] [title]** — Critical|Important — Blocking: yes
+   - Evidence: [section and exact conflict or omission]
+   - Impact: [planning/delivery consequence]
+   - Minimal fix: [bounded decision or text change]
 
----
+## Follow-ups
 
-## Findings
+[Only non-blocking items worth preserving]
 
-### [Group Icon] Group Name (reviewer agents)
+## Coverage and Resolution
 
-#### Critical (Must Fix)
-1. **[Finding title]**
-   - Section: [spec section reference]
-   - Issue: [what's wrong]
-   - Impact: [why it matters]
-   - Recommended Fix: [how to fix]
-
-#### Important (Should Fix)
-2. **[Finding title]**
-   ...
-
-#### Minor (Nice to Have)
-3. **[Finding title]**
-   ...
-
----
-
-## Strengths
-[What the spec does well — be specific]
-
-## Recommendations
-[Improvements that go beyond fixing issues]
+- [acceptance criterion or prior finding] → [section] → covered|resolved|open
 ```
+
+Do not include empty reviewer sections, copied checklists, or long generic recommendations. Mention two or three concrete strengths at most.
+
+### 8. Fix and Re-review Without Loops
+
+Review is read-only by default. Do not edit or commit the spec because findings exist.
+
+If the user asks to fix findings:
+
+- batch clear fixes into one editing pass;
+- ask only for decisions that affect scope, behavior, compatibility, architecture, or risk;
+- group related choices into one concise question where possible;
+- do not commit unless the user explicitly asks.
+
+After fixes, run one `Differential` verification when requested or when the user asked to “fix and verify.” A second full review requires an explicit request or a material change to the problem, scope, trust boundary, or architecture. If blockers are gone, stop and declare the spec ready for planning.
 
 ## Key Principles
 
-- **Never skip the user choice step** — always ask which groups to run
-- **Never auto-apply ambiguous fixes** — always ask the user with multiple-choice
-- **Every multiple-choice option needs a concrete example**
-- **Mark recommended options clearly**
-- **Commit only after all fixes are applied** — not after each individual fix
-- **Be specific in findings** — reference spec sections, not vague "improve X"
-- **Acknowledge strengths** before listing issues — builds trust in the feedback
+- Optimize for decision quality per token, not reviewer count.
+- Review the phase being planned, not the whole roadmap repeatedly.
+- Re-review edits and unresolved blockers, not unchanged text.
+- Keep product/architecture decisions in the spec and implementation mechanics in the plan.
+- Findings must be evidence-backed, deduplicated, and scope-relevant.
+- Ask fewer questions and reuse prior decisions.
+- Never auto-edit or auto-commit during a review-only request.

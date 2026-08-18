@@ -1,232 +1,188 @@
 ---
 name: "dotagent:enolalabs:plan-review"
-description: "Review an implementation plan from multiple software development perspectives using specialized subagents. Use after writing-plans produces a plan, before executing it."
+description: "Run a risk-based, token-efficient review of an implementation plan. Defaults to focused review and uses differential re-review after changes."
 category: "Developer Tools"
 vendor: "enolalabs"
 ---
 
 # Plan Review
 
-Multi-perspective plan review using specialized subagents. Each reviewer examines the implementation plan from their domain expertise, then findings are consolidated into a verdict with actionable fixes.
+Review an implementation plan for executability and material delivery risk. Prefer the smallest review scope that can answer: **can implementation begin safely, and what truly blocks it?**
 
 ## When to Use
 
-After `superpowers:writing-plans` produces a plan file, before executing it (either inline or via `superpowers:subagent-driven-development`).
+Use after a plan is written and before executing the affected package or milestone.
 
-**Typical flow:**
-```
+```text
 brainstorming → spec-review → writing-plans → plan-review → implementation
 ```
 
+For a plan set, review global architecture and contracts once, then review each package immediately before execution. Do not repeatedly review the entire plan set.
+
+## Review Modes
+
+| Mode | Use when | Default reviewers | Context |
+|---|---|---|---|
+| **Focused** | First review of a normal plan or package | Technical + at most one risk specialist | Target plan, relevant spec sections, global constraints, direct dependencies |
+| **Full** | Explicit user request, or a one-time release/foundation gate whose cross-cutting risks cannot be covered package-by-package | All relevant groups, at most one reviewer per group | Full plan set and spec |
+| **Differential** | Any re-review after findings were fixed | Technical + only specialists that own unresolved findings, maximum two reviewers | Changed sections plus unresolved findings |
+
+`Focused` is the default for an initial review. `Differential` is the default whenever the user says **re-review**, **review again**, or asks whether a revised plan is ready. Never ask the user to choose review groups again during the same review chain unless scope or risk changed materially.
+
 ## Process
 
-### Step 1: Locate the Plan
+### 1. Locate and Bound the Review
 
-- Auto-scan `docs/superpowers/plans/` for `*.md` files
-- If exactly one plan found → use it
-- If multiple found → ask user which one (multiple-choice with file dates)
-- If none found → ask user for the path
+- Use an explicit path from the user when present.
+- Otherwise scan `docs/superpowers/plans/`. Ask only when multiple plausible targets remain.
+- If the target is an index referencing package plans, default to the selected package plus global constraints and direct dependency contracts. Review the whole set only in `Full` mode.
+- Read the original spec only where needed for traceability. Do not load unrelated future-phase sections.
+- Record the target path, scope, mode, and current commit.
 
-Read the plan content. Also read the original spec if referenced in the plan header.
+For a differential review, also locate the previous review report and determine the comparison base. Prefer, in order:
 
-### Step 2: Detect Tech Stack
+1. base commit recorded in the previous report;
+2. the commit immediately before the review fixes;
+3. the current worktree diff;
+4. changed sections identified from the conversation.
 
-Follow the detection rules in [subagent-mapping.md](subagent-mapping.md).
+If no reliable diff exists, review only unresolved findings and the sections they reference. Do not silently fall back to a full review.
 
-Scan the project root for config files and scan the plan content for technology keywords. The plan header usually contains a `**Tech Stack:**` field — use that as a starting point.
+### 2. Detect Context Without Reconfirming the Obvious
 
-Present the detected tech stack to the user for confirmation:
+Follow [subagent-mapping.md](subagent-mapping.md). Infer the stack from the plan, spec, and repository. Ask the user only when an ambiguity would change the review or recommended architecture. Reuse stack decisions already confirmed in the conversation or previous report.
 
-```
-Detected tech stack (from plan + project):
-  Language:  Go (go.mod found)
-  Frontend:  React (package.json)
-  Database:  PostgreSQL (plan header)
-  Infra:     Kubernetes (plan mentions helm charts)
+Choose the specialist for the highest material risk:
 
-Is this correct?
-A) ⭐ Yes, proceed with these (recommended)
-B) No, let me adjust
-```
+- Security: authentication, authorization, secrets, multi-tenancy, untrusted input, or sensitive data.
+- Performance: explicit SLOs, concurrency, large data, hot database paths, or resource limits.
+- Process: migrations, deployment, rollback, lifecycle, or release gates.
+- Product: user-visible flows, scope coverage, compatibility, or acceptance behavior.
 
-### Step 3: Ask User Which Review Groups
+Respect explicitly requested groups or mode. Otherwise do not ask a separate group-selection question.
 
-Present the 5 review groups as a multiple-choice question:
+### 3. Apply the Plan Sufficiency Standard
 
-```
-Which review groups to run?
+A plan is executable when it provides enough information to implement and verify the intended behavior without reopening architectural decisions. A task normally needs:
 
-A) ⭐ All 5 groups (recommended)
-   Example: Technical + Performance + Security + Process + Product — comprehensive review
+- concrete files or owned components;
+- intended outcome and externally consumed contracts/invariants;
+- dependency ordering where relevant;
+- named test scenarios or assertions, including important failure cases;
+- exact verification commands and package/milestone gates.
 
-B) Technical + Security only
-   Example: Focus on task structure and vulnerability coverage
+Representative signatures, SQL shapes, pseudocode, or snippets are useful when they freeze a boundary. Full production bodies and copy-pasteable test bodies are **not required**. TDD belongs in execution; the plan must specify behavior and evidence, not pre-implement the feature.
 
-C) Technical only (spec coverage + task quality)
-   Example: Focus on plan completeness and code quality
+Treat a placeholder as blocking only when it leaves a required behavior, contract, security property, data invariant, or architectural choice undecided. Implementation-local details bounded by tests and contracts may be decided during execution.
 
-D) Let me pick individually
-   Example: I'll select specific groups from the full list
+Commit commands are optional unless immutable history or a named workflow gate depends on them.
 
-Subagents that will be dispatched (auto-selected for your Go + React project):
-  Technical:   golang-pro, react-specialist
-  Performance: performance-engineer
-  Security:    security-auditor
-  Process:     devops-engineer
-  Product:     product-manager
-```
+### 4. Dispatch the Minimum Useful Reviewers
 
-If the user picks D, show all 5 groups individually.
+Read the selected `reviewers/<group>.md` templates and dispatch reviewers only if subagents are available and allowed.
 
-### Step 4: Dispatch Reviewer Subagents
+- Focused: maximum two reviewers.
+- Differential: maximum two reviewers; only one is preferred for a localized change.
+- Full: maximum one reviewer per selected group.
+- Use one best-fit agent per group; do not dispatch both a generic and a stack-specific agent for the same concern.
 
-For each selected review group, dispatch a subagent:
+When reviewers share the filesystem, pass paths, scope, mode, comparison base, and unresolved finding IDs. Do not paste the full plan/spec into every prompt. Tell reviewers to read only the assigned scope and direct references.
 
-1. Read the reviewer prompt template from `reviewers/<group>.md`
-2. Fill in the plan content, spec content (if available), and tech stack context
-3. Dispatch using the subagent type determined in Step 2
-4. If the specialized subagent is not available, use `general-purpose`
+If subagents are unavailable, perform the same bounded review directly; do not broaden scope to compensate.
 
-Each subagent receives:
-- Its role description from the reviewer template
-- The full plan content
-- The original spec content (for spec coverage checks)
-- The detected tech stack
-- Instructions to output findings by severity (Critical / Important / Minor)
+### 5. Consolidate and Calibrate Findings
 
-### Step 5: Consolidate Report
+Every finding must include evidence, a precise plan reference, impact, and the smallest adequate fix. Deduplicate findings that share one root cause before counting them.
 
-Merge all subagent findings into a single review report. See Output Format below.
+Severity means:
 
-Calculate the overall verdict:
+- **Critical:** implementation is impossible or contradictory; required spec behavior is absent; a cross-task contract cannot compile or compose; or the plan creates a credible security, isolation, or data-loss failure.
+- **Important:** likely correctness failure, major rework, unverifiable acceptance criterion, or material operational/performance risk within the stated phase.
+- **Minor:** non-blocking clarity, polish, or optimization.
+
+Do not promote an issue because a code sample is incomplete. Do not report future-phase hardening, generic best practices, or preferences not required by the spec and current phase.
+
+Each reviewer may return at most three Critical/Important findings and two Minor findings. Ask for the highest-impact independent findings; omit duplicates and low-confidence speculation. The consolidated report should normally contain no more than five blocking findings. If more independent blockers exist, state that the review is truncated, return `Needs Changes`, and review the remainder only after the first batch is fixed.
+
+During differential review:
+
+- verify each prior blocking finding as `resolved`, `partially resolved`, or `open`;
+- report a new blocker only if it is introduced/exposed by the change or is a clear correctness/security issue that would make approval unsafe;
+- do not reopen accepted decisions without new evidence;
+- do not re-report unchanged Minor findings.
+
+### 6. Decide the Verdict
 
 | Verdict | Condition |
-|---------|-----------|
-| **Approved** | 0 Critical, 0 Important |
-| **Needs Changes** | Any Critical or Important findings |
-| **Rejected** | Fundamental plan flaws (spec coverage gaps, impossible task ordering) |
+|---|---|
+| **Approved** | No blocking findings remain |
+| **Approved with Follow-ups** | No blockers; only explicitly non-blocking follow-ups remain |
+| **Needs Changes** | Localized blocking findings remain |
+| **Rejected** | A fundamental rewrite or missing architectural decision prevents a safe plan |
 
-### Step 6: Present Verdict and Report
+Mark each Critical/Important finding `Blocking: yes|no`. Critical findings are normally blocking. An Important finding is blocking only when it must be resolved before starting the reviewed scope.
 
-Display the consolidated report to the user, then save it:
+### 7. Save a Compact Report
 
-```
+Save to:
+
+```text
 docs/superpowers/reviews/YYYY-MM-DD-<topic>-plan-review.md
 ```
 
-### Step 7: Fix Flow (if Needs Changes or Rejected)
-
-For each Critical and Important finding, in priority order:
-
-**If the fix is clear and unambiguous:**
-- Apply the fix directly to the plan file
-
-**If there are multiple valid approaches:**
-Ask the user with a multiple-choice question. Format:
-
-```
-Finding: [finding title]
-[task/section reference in plan]
-
-Which approach do you prefer?
-
-A) ⭐ [Recommended option] (recommended)
-   Example: [concrete example of this approach in plan context]
-   Best for: [when to choose this]
-
-B) [Alternative option]
-   Example: [concrete example]
-   Best for: [when to choose this]
-
-C) [Another alternative]
-   Example: [concrete example]
-   Best for: [when to choose this]
-
-D) Skip this finding
-   Example: Leave the plan as-is, address during implementation
-```
-
-Rules for multiple-choice questions:
-- Always mark the recommended option with a star icon
-- Every option must have a concrete example in plan context (task steps, file paths, test code)
-- Limit to 3-4 options (plus skip)
-- If the user selects skip, note it and move on
-
-**After all fixes are applied:**
-- Commit the updated plan with message: `fix: apply plan review findings`
-- Offer to re-run the review (user's choice)
-
-### Step 8: Transition
-
-If verdict is Approved:
-- Suggest proceeding to execution (`superpowers:subagent-driven-development` or `superpowers:executing-plans`)
-
-If verdict is Needs Changes and fixes were applied:
-- Offer to re-review, or proceed if user is satisfied
-
-## Output Format
+Use this structure:
 
 ```markdown
-# Plan Review: [Feature Name]
+# Plan Review: [Topic]
 
-**Date:** YYYY-MM-DD
-**Plan:** `path/to/plan.md`
-**Spec:** `path/to/spec.md` (if referenced)
-**Tech Stack:** Go, React, PostgreSQL, Kubernetes
-**Reviewers:** golang-pro, react-specialist, performance-engineer, security-auditor, devops-engineer, product-manager
+**Mode:** Focused | Full | Differential
+**Scope:** [plan/package/sections]
+**Plan:** `path`
+**Spec:** `path` or selected sections
+**Base:** [commit/report, for differential review]
+**Reviewers:** [groups/agents]
 
----
+## Verdict: [verdict]
 
-## Verdict: [Approved / Needs Changes / Rejected]
+[One-paragraph summary]
 
-**Summary:** [1-2 sentence overall assessment]
+## Blocking Findings
 
-**Finding counts:** X Critical, Y Important, Z Minor
+1. **[ID] [title]** — Critical|Important — Blocking: yes
+   - Evidence: [task/step and exact conflict or omission]
+   - Impact: [implementation consequence]
+   - Minimal fix: [bounded change]
 
-**Spec coverage:** X of Y requirements have corresponding tasks (Z gaps)
+## Follow-ups
 
----
+[Only non-blocking items worth preserving]
 
-## Findings
+## Coverage and Resolution
 
-### [Group Icon] Group Name (reviewer agents)
-
-#### Critical (Must Fix)
-1. **[Finding title]**
-   - Task/Section: [plan reference]
-   - Issue: [what's wrong]
-   - Impact: [why it matters during implementation]
-   - Recommended Fix: [how to fix]
-
-#### Important (Should Fix)
-2. **[Finding title]**
-   ...
-
-#### Minor (Nice to Have)
-3. **[Finding title]**
-   ...
-
----
-
-## Spec Coverage Gaps
-[List of spec requirements with no corresponding plan task, if any]
-
-## Strengths
-[What the plan does well — task structure, code quality, test coverage]
-
-## Recommendations
-[Improvements for plan execution quality]
+- [spec criterion or prior finding] → [task/section] → covered|resolved|open
 ```
+
+Do not pad the report with empty group sections, repeated checklists, or long strengths lists. Mention two or three concrete strengths at most.
+
+### 8. Fix and Re-review Without Loops
+
+Review is read-only by default. Do not modify the plan or commit merely because findings exist.
+
+If the user asks to fix findings:
+
+- batch clear fixes into one editing pass;
+- ask only for choices that change architecture, scope, compatibility, or risk;
+- group related choices into one concise question where possible;
+- do not commit unless the user explicitly asks for a commit.
+
+After fixes, run one `Differential` verification when requested or when the user asked to “fix and verify.” A second full review requires an explicit user request or a material change to global architecture/contracts. If no blockers remain, stop and declare the reviewed scope ready for execution.
 
 ## Key Principles
 
-- **Never skip the user choice step** — always ask which groups to run
-- **Never auto-apply ambiguous fixes** — always ask the user with multiple-choice
-- **Every multiple-choice option needs a concrete example in plan context**
-- **Mark recommended options clearly**
-- **Commit only after all fixes are applied** — not after each individual fix
-- **Be specific in findings** — reference task numbers and step numbers, not vague "improve the plan"
-- **Check spec coverage** — every spec requirement must map to at least one task
-- **Check for placeholders** — "TBD", "TODO", "implement later" are Critical findings
-- **Check task interfaces** — types and function signatures must be consistent across tasks
-- **Acknowledge strengths** before listing issues
+- Optimize for decision quality per token, not reviewer count.
+- Review the current execution boundary, not every future package.
+- Re-review changes, not unchanged documents.
+- A plan freezes behavior and boundaries; it does not contain the implementation.
+- Findings must be evidence-backed, deduplicated, and phase-relevant.
+- Ask fewer questions and reuse decisions already made.
+- Never auto-edit or auto-commit during a review-only request.

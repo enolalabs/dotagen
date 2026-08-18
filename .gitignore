@@ -14,3 +14,7 @@
 .codex
 skillsrc/.page_cache.json
 skillsrc/.tree_cache.json
+website/node_modules/
+website/.docusaurus/
+website/build/
+.wrangler/

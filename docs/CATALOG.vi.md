@@ -1,5 +1,7 @@
 # 📚 Danh mục Agents & Skills mặc định
 
+> **Phạm vi lịch sử:** Tài liệu này mô tả catalog agents/skills `ds-*` trước đây. Danh sách built-in skills hiện hành, số lượng và cách bật `dotagent-*` được duy trì trong [README](../README.md#built-in-skills).
+
 > Tài liệu giới thiệu toàn bộ **144 agents** và **16 skills** được tích hợp sẵn trong dotagen.
 > Tất cả đều bị tắt theo mặc định — bạn chọn bật agent/skill nào và cho nền tảng nào trong `config.yaml`.
 

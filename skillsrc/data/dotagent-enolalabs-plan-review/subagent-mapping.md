@@ -1,91 +1,40 @@
-# Subagent Mapping: Tech Stack Detection
+# Reviewer Mapping and Risk Selection
 
-## How to Detect Tech Stack
+Use repository files and the reviewed plan/spec to infer the stack. Detection selects reviewer expertise; it does not justify adding more reviewers.
 
-### Phase 1: Scan Project Files
+## Stack Signals
 
-Check the project root (and one level deep) for these files:
+| Signal | Stack | Preferred technical reviewer |
+|---|---|---|
+| `go.mod` | Go | Go engineer |
+| `package.json` | JavaScript/TypeScript | TypeScript/JavaScript engineer |
+| `pyproject.toml`, `requirements.txt` | Python | Python engineer |
+| `Cargo.toml` | Rust | Rust engineer |
+| `*.csproj`, `*.sln` | .NET | C#/.NET engineer |
+| `pom.xml`, `build.gradle` | Java/JVM | Java engineer |
+| `Gemfile` | Ruby | Ruby engineer |
+| `composer.json` | PHP | PHP engineer |
+| `Package.swift` | Swift | Swift engineer |
 
-| File | Language/Stack | Subagent |
-|------|---------------|----------|
-| `go.mod` | Go | `golang-pro` |
-| `package.json` | JavaScript/TypeScript | `typescript-pro` or `javascript-pro` |
-| `requirements.txt`, `pyproject.toml`, `setup.py`, `Pipfile` | Python | `python-pro` |
-| `Cargo.toml` | Rust | `rust-engineer` |
-| `*.csproj`, `*.sln` | C# / .NET | `csharp-developer` |
-| `pom.xml`, `build.gradle` | Java | `java-architect` |
-| `Gemfile` | Ruby | `rails-expert` |
-| `composer.json` | PHP | `php-pro` |
-| `Pubspec.yaml` | Dart/Flutter | `flutter-expert` |
-| `Package.swift` | Swift | `swift-expert` |
-| `mix.exs` | Elixir | `elixir-expert` |
+Framework/database/cloud keywords refine the selected reviewer's context. They do not each receive a separate subagent.
 
-### Phase 2: Scan Spec Content for Keywords
+## Group Triggers
 
-Search the spec text for these patterns:
+| Group | Select when the reviewed scope contains |
+|---|---|
+| Technical | Always |
+| Security | Auth, authorization, secrets, multi-tenancy, sensitive data, untrusted input, public endpoints |
+| Performance | Explicit SLO/scale, concurrency, hot queries, large data, memory/resource bounds |
+| Process | Deployment, migrations, rollback, lifecycle, CI/release gates, availability |
+| Product | User-visible behavior, compatibility, rollout, or material scope/acceptance uncertainty |
 
-| Keyword Pattern | Maps To | Subagent |
-|----------------|---------|----------|
-| `React`, `JSX`, `Next.js`, `Remix` | React frontend | `react-specialist` or `nextjs-developer` |
-| `Vue`, `Nuxt`, `Vite` | Vue frontend | `vue-expert` |
-| `Angular`, `NgRx` | Angular frontend | `angular-architect` |
-| `GraphQL`, `Apollo`, `Hasura` | GraphQL API | `graphql-architect` |
-| `PostgreSQL`, `postgres` | PostgreSQL DB | `postgres-pro` |
-| `MySQL`, `MariaDB` | MySQL DB | `database-administrator` |
-| `MongoDB`, `mongoose` | MongoDB | `database-administrator` |
-| `Redis`, `cache` | Redis/cache | `performance-engineer` |
-| `Docker`, `container` | Containerization | `docker-expert` |
-| `Kubernetes`, `K8s`, `helm` | Orchestration | `kubernetes-specialist` |
-| `Terraform`, `IaC` | Infrastructure | `terraform-engineer` |
-| `AWS`, `GCP`, `Azure` | Cloud platform | `cloud-architect` |
-| `OAuth`, `JWT`, `authentication`, `auth` | Auth system | `penetration-tester` (additional) |
-| `payment`, `Stripe`, `billing` | Payment system | `payment-integration` (additional) |
-| `GDPR`, `CCPA`, `HIPAA`, `compliance` | Regulatory | `compliance-auditor` (additional) |
+For `Focused` mode, choose Technical plus the single highest-risk triggered group. If no specialist trigger is material, use Technical only. For `Differential`, use the owner of unresolved findings and add Technical only when contract consistency must be checked.
 
-### Phase 3: Map to Review Groups
+## Dispatch Rules
 
-Based on detected tech stack, determine which subagents to dispatch per review group:
-
-#### Technical & Code Quality
-- **Always:** `backend-architect` (or `fullstack-developer` if full-stack)
-- **Language-specific** (pick all that apply):
-  - Go → `golang-pro`
-  - Python → `python-pro`
-  - TypeScript/JavaScript → `typescript-pro`
-  - Java → `java-architect`
-  - C# → `csharp-developer`
-  - Rust → `rust-engineer`
-  - PHP → `php-pro`
-  - Ruby → `rails-expert`
-- **Frontend-specific** (if frontend detected):
-  - React → `react-specialist`
-  - Vue → `vue-expert`
-  - Next.js → `nextjs-developer`
-  - Angular → `angular-architect`
-
-#### Performance
-- **Always:** `performance-engineer`
-- **If database detected:** add `database-optimizer`
-- **If cloud/infra detected:** add `cloud-architect`
-
-#### Security
-- **Always:** `security-auditor`
-- **If auth/payment detected:** add `penetration-tester`
-- **If compliance keywords detected:** add `compliance-auditor`
-
-#### Process & Operations
-- **Always:** `devops-engineer`
-- **If K8s detected:** add `kubernetes-specialist`
-- **If Docker detected:** add `docker-expert`
-- **If Terraform detected:** add `terraform-engineer`
-
-#### Product & People
-- **Always:** `product-manager`
-- **If UI/frontend detected:** add `ux-researcher`
-- **If business logic heavy:** add `business-analyst`
-
-### Fallback Rules
-
-- If a specialized subagent is not available on the current platform, fall back to `general-purpose` with the reviewer prompt template
-- If no tech stack is detected at all, use `general-purpose` for all review groups
-- If the project is a library/CLI (no UI), skip the `ux-researcher` in Product review
+- Select one best-fit agent per group.
+- Prefer a stack-specific technical agent over a generic architecture agent; do not dispatch both.
+- Do not add database, cloud, frontend, or compliance agents merely because their technology is mentioned.
+- Use a specialist only when the assigned scope contains a material question in that specialty.
+- If a preferred agent is unavailable, use one general-purpose reviewer with the corresponding template.
+- Respect the mode limits in `SKILL.md`.

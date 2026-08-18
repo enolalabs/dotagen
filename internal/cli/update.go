@@ -23,7 +23,7 @@ var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update dotagen to the latest version",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		currentVer := version
+		currentVer := normalizeVersion(version)
 
 		fmt.Print("Checking latest version... ")
 		latest, err := getLatestVersion()
