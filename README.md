@@ -118,6 +118,8 @@ dotagen --version
 
 dotagen ships with **842 skills** from **59 vendors** and **203 built-in agents**. Most skills are sourced from the [awesome-agent-skills](https://github.com/enolalabs/awesome-agent-skills) registry and [obra/superpowers](https://github.com/obra/superpowers); [Hallmark](https://github.com/Nutlope/hallmark) is a separately pinned MIT snapshot from Nutlope; game-development agents and skills come from [claude-code-game-studios](https://github.com/donchitos/claude-code-game-studios). They are injected automatically when you run `dotagen init`.
 
+📚 Detailed per-agent/per-skill descriptions for the curated bundles (Game Studios, VoltAgent, mattpocock) live in [docs/CATALOG.md](docs/CATALOG.md) ([Tiếng Việt](docs/CATALOG.vi.md)).
+
 All skills are **disabled by default**. You decide which skills to enable and for which platforms.
 
 ### Categories
