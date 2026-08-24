@@ -947,11 +947,11 @@ func (s *Server) handleToggle(w http.ResponseWriter, r *http.Request) {
 				os.WriteFile(outPath, []byte(rendered), 0o644)
 				absGenerated, _ := filepath.Abs(outPath)
 				adapter.EnsureDirectories(projectDir)
-				symlinkPath := filepath.Join(projectDir, adapter.SymlinkPath(item.Name))
+				symlinkPath := config.ResolvePath(projectDir, adapter.SymlinkPath(item.Name))
 				engine.CreateSymlink(absGenerated, symlinkPath)
 				synced++
 			} else {
-				symlinkPath := filepath.Join(projectDir, adapter.SymlinkPath(item.Name))
+				symlinkPath := config.ResolvePath(projectDir, adapter.SymlinkPath(item.Name))
 				if err := engine.RemoveSymlink(symlinkPath); err == nil {
 					removed++
 				}
@@ -980,11 +980,11 @@ func (s *Server) handleToggle(w http.ResponseWriter, r *http.Request) {
 				}
 				absGenerated, _ := filepath.Abs(outDir)
 				sa.EnsureSkillDirectories(projectDir)
-				symlinkDir := filepath.Join(projectDir, sa.SkillSymlinkDir(item.Name))
+				symlinkDir := config.ResolvePath(projectDir, sa.SkillSymlinkDir(item.Name))
 				engine.CreateSymlink(absGenerated, symlinkDir)
 				synced++
 			} else {
-				symlinkDir := filepath.Join(projectDir, sa.SkillSymlinkDir(item.Name))
+				symlinkDir := config.ResolvePath(projectDir, sa.SkillSymlinkDir(item.Name))
 				os.RemoveAll(symlinkDir)
 				removed++
 			}

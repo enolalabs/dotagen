@@ -27,8 +27,8 @@ func (r *Renderer) Render(ag agent.Agent, target string) (string, error) {
 }
 
 type RenderResult struct {
-	AgentName   string
-	Target      string
+	AgentName     string
+	Target        string
 	GeneratedPath string
 	SymlinkPath   string
 }
@@ -64,7 +64,7 @@ func (r *Renderer) RenderAll(agents []agent.Agent, cfg *config.Config, dotgenDir
 				return nil, err
 			}
 
-			symlinkPath := filepath.Join(projectDir, adapter.SymlinkPath(ag.Name))
+			symlinkPath := config.ResolvePath(projectDir, adapter.SymlinkPath(ag.Name))
 			if err := adapter.EnsureDirectories(projectDir); err != nil {
 				return nil, fmt.Errorf("failed to ensure directories for %s: %w", target, err)
 			}

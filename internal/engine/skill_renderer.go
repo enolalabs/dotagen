@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/enolalabs/dotagen/v2/internal/config"
@@ -64,7 +65,7 @@ func (r *Renderer) RenderAllSkills(skills []skill.Skill, cfg *config.Config, dot
 				return nil, err
 			}
 
-			symlinkDir := filepath.Join(projectDir, sa.SkillSymlinkDir(sk.Name))
+			symlinkDir := config.ResolvePath(projectDir, sa.SkillSymlinkDir(sk.Name))
 			if err := sa.EnsureSkillDirectories(projectDir); err != nil {
 				return nil, fmt.Errorf("failed to ensure skill directories for %s: %w", target, err)
 			}
@@ -100,7 +101,7 @@ func FindDotagenSkillSymlinks(projectDir string, dotgenDir string) ([]SymlinkInf
 
 	var links []SymlinkInfo
 	for dir, plat := range skillDirs {
-		fullDir := filepath.Join(projectDir, dir)
+		fullDir := config.ResolvePath(projectDir, dir)
 		entries, err := os.ReadDir(fullDir)
 		if err != nil {
 			continue
@@ -108,24 +109,33 @@ func FindDotagenSkillSymlinks(projectDir string, dotgenDir string) ([]SymlinkInf
 		for _, entry := range entries {
 			name := entry.Name()
 			fullPath := filepath.Join(fullDir, name)
-			isLink, err := IsSymlink(fullPath)
-			if err != nil || !isLink {
+			if !entry.IsDir() {
 				continue
 			}
 			if !strings.HasPrefix(name, "dotagent-") && !strings.HasPrefix(name, "ds-") {
 				continue
 			}
-			target, err := os.Readlink(fullPath)
+			isLink, err := IsSymlink(fullPath)
 			if err != nil {
 				continue
 			}
-			resolvedTarget := target
-			if !filepath.IsAbs(resolvedTarget) {
-				resolvedTarget = filepath.Join(filepath.Dir(fullPath), resolvedTarget)
+			if !isLink && runtime.GOOS != "windows" {
+				continue
 			}
+			var target string
 			broken := false
-			if _, err := os.Stat(resolvedTarget); err != nil {
-				broken = true
+			if isLink {
+				target, err = os.Readlink(fullPath)
+				if err != nil {
+					continue
+				}
+				resolvedTarget := target
+				if !filepath.IsAbs(resolvedTarget) {
+					resolvedTarget = filepath.Join(filepath.Dir(fullPath), resolvedTarget)
+				}
+				if _, err := os.Stat(resolvedTarget); err != nil {
+					broken = true
+				}
 			}
 			links = append(links, SymlinkInfo{
 				Path:     fullPath,

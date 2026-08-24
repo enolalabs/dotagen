@@ -3,6 +3,7 @@ package engine
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,10 +21,16 @@ func TestCreateSymlink(t *testing.T) {
 
 	isLink, err := IsSymlink(dst)
 	require.NoError(t, err)
-	assert.True(t, isLink)
 
-	target, _ := os.Readlink(dst)
-	assert.Equal(t, src, target)
+	if isLink {
+		target, _ := os.Readlink(dst)
+		assert.Equal(t, src, target)
+	} else {
+		// On Windows without symlink privileges, fallback creates a copy or hard link
+		data, err := os.ReadFile(dst)
+		require.NoError(t, err)
+		assert.Equal(t, "hello", string(data))
+	}
 }
 
 func TestCreateSymlinkOverwrite(t *testing.T) {
@@ -37,8 +44,17 @@ func TestCreateSymlinkOverwrite(t *testing.T) {
 	CreateSymlink(src1, dst)
 	CreateSymlink(src2, dst)
 
-	target, _ := os.Readlink(dst)
-	assert.Equal(t, src2, target)
+	isLink, err := IsSymlink(dst)
+	require.NoError(t, err)
+
+	if isLink {
+		target, _ := os.Readlink(dst)
+		assert.Equal(t, src2, target)
+	} else {
+		data, err := os.ReadFile(dst)
+		require.NoError(t, err)
+		assert.Equal(t, "two", string(data))
+	}
 }
 
 func TestRemoveSymlink(t *testing.T) {
@@ -115,4 +131,21 @@ func TestFindDotagenSymlinksSkipsNonDaAgents(t *testing.T) {
 
 	assert.Len(t, links, 1)
 	assert.Equal(t, "da-myagent", links[0].Agent)
+}
+
+func TestCopyFile(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("copy fallback test only relevant on Windows")
+	}
+	dir := t.TempDir()
+	src := filepath.Join(dir, "source.txt")
+	dst := filepath.Join(dir, "subdir", "dest.txt")
+	require.NoError(t, os.WriteFile(src, []byte("hello copy"), 0o644))
+
+	err := copyFile(src, dst)
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(dst)
+	require.NoError(t, err)
+	assert.Equal(t, "hello copy", string(data))
 }

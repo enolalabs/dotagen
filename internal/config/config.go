@@ -12,7 +12,6 @@ import (
 const ClaudeCodeRootPath = ".claude/agents"
 const CodexRootPath = ".codex/agents"
 const GeminiCliRootPath = ".gemini/agents"
-const OpenCodeRootPath = ".config/opencode/agents"
 const AntigravityRootPath = ".agents"
 const CursorRootPath = ".cursor/rules"
 const CopilotRootPath = ".github/agents"
@@ -21,12 +20,14 @@ const WindsurfRootPath = ".windsurf/rules"
 const ClaudeCodeSkillPath = ".claude/skills"
 const CodexSkillPath = ".agents/skills"
 const GeminiCliSkillPath = ".gemini/skills"
-const OpenCodeSkillPath = ".opencode/skills"
 const AntigravitySkillPath = ".agent/skills"
 const CursorSkillPath = ".cursor/skills"
 const CopilotSkillPath = ".github/skills"
 const WindsurfSkillPath = ".windsurf/skills"
 const AntigravityGlobalWorkflowsPath = ".gemini/antigravity/global_workflows"
+
+const OpenCodeRootPath = ".config/opencode/agents"
+const OpenCodeSkillPath = ".config/opencode/skills"
 
 var ValidTargets = []string{"antigravity", "claude-code", "codex", "cursor", "gemini-cli", "github-copilot", "opencode", "windsurf"}
 
@@ -59,9 +60,9 @@ type SkillConfig struct {
 }
 
 type Config struct {
-	Targets []string                `yaml:"targets" json:"targets"`
-	Agents  map[string]AgentConfig  `yaml:"agents" json:"agents"`
-	Skills  map[string]SkillConfig  `yaml:"skills,omitempty" json:"skills,omitempty"`
+	Targets []string               `yaml:"targets" json:"targets"`
+	Agents  map[string]AgentConfig `yaml:"agents" json:"agents"`
+	Skills  map[string]SkillConfig `yaml:"skills,omitempty" json:"skills,omitempty"`
 }
 
 func LoadConfig(dotgenDir string) (*Config, error) {
@@ -221,6 +222,14 @@ func GetProjectDir() (string, error) {
 	return home, nil
 }
 
+// ResolvePath preserves absolute platform paths while resolving relative paths from home.
+func ResolvePath(baseDir, path string) string {
+	if filepath.IsAbs(path) {
+		return path
+	}
+	return filepath.Join(baseDir, path)
+}
+
 func DetectPlatforms(homeDir string) []string {
 	var detected []string
 	checks := map[string]string{
@@ -234,7 +243,7 @@ func DetectPlatforms(homeDir string) []string {
 		WindsurfRootPath:    "windsurf",
 	}
 	for dir, platform := range checks {
-		if _, err := os.Stat(filepath.Join(homeDir, dir)); err == nil {
+		if _, err := os.Stat(ResolvePath(homeDir, dir)); err == nil {
 			detected = append(detected, platform)
 		}
 	}

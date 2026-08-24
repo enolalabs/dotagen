@@ -1,6 +1,7 @@
 package platform
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/enolalabs/dotagen/v2/internal/agent"
@@ -29,8 +30,8 @@ func TestClaudeCodeAdapter(t *testing.T) {
 	assert.Contains(t, out, "---")
 	assert.Contains(t, out, "name: test")
 	assert.Contains(t, out, "# Test\nHello")
-	assert.Equal(t, "claude-code/test.md", a.OutputPath("test"))
-	assert.Equal(t, ".claude/agents/test.md", a.SymlinkPath("test"))
+	assert.Equal(t, filepath.Join("claude-code", "test.md"), a.OutputPath("test"))
+	assert.Equal(t, filepath.Join(".claude", "agents", "test.md"), a.SymlinkPath("test"))
 }
 
 func TestCodexAdapter(t *testing.T) {
@@ -43,8 +44,8 @@ func TestCodexAdapter(t *testing.T) {
 	assert.Contains(t, out, "---")
 	assert.Contains(t, out, "name: test")
 	assert.Contains(t, out, "# Test\nHello")
-	assert.Equal(t, "codex/test.md", a.OutputPath("test"))
-	assert.Equal(t, ".codex/agents/test.md", a.SymlinkPath("test"))
+	assert.Equal(t, filepath.Join("codex", "test.md"), a.OutputPath("test"))
+	assert.Equal(t, filepath.Join(".codex", "agents", "test.md"), a.SymlinkPath("test"))
 }
 
 func TestCodexAdapterSkillAdapter(t *testing.T) {
@@ -52,11 +53,9 @@ func TestCodexAdapterSkillAdapter(t *testing.T) {
 	// Verify it implements SkillAdapter
 	var _ SkillAdapter = a
 
-	assert.Equal(t, "codex/skills/ds-my-skill", a.SkillOutputDir("ds-my-skill"))
-	assert.Equal(t, ".agents/skills/ds-my-skill", a.SkillSymlinkDir("ds-my-skill"))
+	assert.Equal(t, filepath.Join("codex", "skills", "ds-my-skill"), a.SkillOutputDir("ds-my-skill"))
+	assert.Equal(t, filepath.Join(".agents", "skills", "ds-my-skill"), a.SkillSymlinkDir("ds-my-skill"))
 }
-
-
 
 func TestGeminiCLIAdapter(t *testing.T) {
 	a := NewGeminiCLIAdapter()
@@ -68,8 +67,8 @@ func TestGeminiCLIAdapter(t *testing.T) {
 	assert.Contains(t, out, "---")
 	assert.Contains(t, out, "name: test")
 	assert.Contains(t, out, "# Test\nHello")
-	assert.Equal(t, "gemini-cli/test.md", a.OutputPath("test"))
-	assert.Equal(t, ".gemini/agents/test.md", a.SymlinkPath("test"))
+	assert.Equal(t, filepath.Join("gemini-cli", "test.md"), a.OutputPath("test"))
+	assert.Equal(t, filepath.Join(".gemini", "agents", "test.md"), a.SymlinkPath("test"))
 }
 
 func TestOpenCodeAdapter(t *testing.T) {
@@ -83,8 +82,9 @@ func TestOpenCodeAdapter(t *testing.T) {
 	assert.Contains(t, out, "description: My Agent")
 	assert.Contains(t, out, "mode: subagent")
 	assert.Contains(t, out, "# My Agent")
-	assert.Equal(t, "opencode/test.md", a.OutputPath("test"))
-	assert.Equal(t, ".config/opencode/agents/test.md", a.SymlinkPath("test"))
+	assert.Equal(t, filepath.Join("opencode", "test.md"), a.OutputPath("test"))
+
+	assert.Equal(t, filepath.Join(".config", "opencode", "agents", "test.md"), a.SymlinkPath("test"))
 }
 
 func TestAntigravityAdapter(t *testing.T) {
@@ -96,8 +96,8 @@ func TestAntigravityAdapter(t *testing.T) {
 	require.NoError(t, err)
 	// Antigravity uses plain markdown, no frontmatter
 	assert.Equal(t, "# Test\nHello", out)
-	assert.Equal(t, "antigravity/test.md", a.OutputPath("test"))
-	assert.Equal(t, ".agents/test.md", a.SymlinkPath("test"))
+	assert.Equal(t, filepath.Join("antigravity", "test.md"), a.OutputPath("test"))
+	assert.Equal(t, filepath.Join(".agents", "test.md"), a.SymlinkPath("test"))
 }
 
 func TestAntigravityAdapterSkillAdapter(t *testing.T) {
@@ -105,7 +105,6 @@ func TestAntigravityAdapterSkillAdapter(t *testing.T) {
 	// Verify it implements SkillAdapter
 	var _ SkillAdapter = a
 
-	assert.Equal(t, "antigravity/skills/ds-my-skill", a.SkillOutputDir("ds-my-skill"))
-	assert.Equal(t, ".agent/skills/ds-my-skill", a.SkillSymlinkDir("ds-my-skill"))
+	assert.Equal(t, filepath.Join("antigravity", "skills", "ds-my-skill"), a.SkillOutputDir("ds-my-skill"))
+	assert.Equal(t, filepath.Join(".agent", "skills", "ds-my-skill"), a.SkillSymlinkDir("ds-my-skill"))
 }
-

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/enolalabs/dotagen/v2/internal/agent"
 	"github.com/enolalabs/dotagen/v2/internal/config"
@@ -74,7 +75,7 @@ var statusCmd = &cobra.Command{
 					fmt.Printf("    ⚠ %-12s (unknown platform)\n", target)
 					continue
 				}
-				symlinkPath := filepath.Join(projectDir, adapter.SymlinkPath(ag.Name))
+				symlinkPath := config.ResolvePath(projectDir, adapter.SymlinkPath(ag.Name))
 				status := checkStatus(ag, target, adapter, symlinkPath)
 				switch status {
 				case "synced":
@@ -122,7 +123,7 @@ var statusCmd = &cobra.Command{
 						continue
 					}
 
-					symlinkDir := filepath.Join(projectDir, sa.SkillSymlinkDir(sk.Name))
+					symlinkDir := config.ResolvePath(projectDir, sa.SkillSymlinkDir(sk.Name))
 					status := checkSkillStatus(symlinkDir)
 					switch status {
 					case "synced":
@@ -147,27 +148,27 @@ func checkStatus(ag agent.Agent, target string, adapter platform.Adapter, symlin
 		return "missing"
 	}
 
-	if info.Mode()&os.ModeSymlink == 0 {
+	contentPath := symlinkPath
+	if info.Mode()&os.ModeSymlink != 0 {
+		linkTarget, err := os.Readlink(symlinkPath)
+		if err != nil {
+			return "broken"
+		}
+
+		contentPath = linkTarget
+		if !filepath.IsAbs(contentPath) {
+			contentPath = filepath.Join(filepath.Dir(symlinkPath), contentPath)
+		}
+		if _, err := os.Stat(contentPath); err != nil {
+			return "broken"
+		}
+	} else if runtime.GOOS != "windows" {
 		return "missing"
 	}
 
-	linkTarget, err := os.Readlink(symlinkPath)
+	generatedContent, err := os.ReadFile(contentPath)
 	if err != nil {
-		return "broken"
-	}
-
-	resolvedTarget := linkTarget
-	if !filepath.IsAbs(resolvedTarget) {
-		resolvedTarget = filepath.Join(filepath.Dir(symlinkPath), resolvedTarget)
-	}
-
-	if _, err := os.Stat(resolvedTarget); err != nil {
-		return "broken"
-	}
-
-	generatedContent, err := os.ReadFile(resolvedTarget)
-	if err != nil {
-		return "broken"
+		return "missing"
 	}
 
 	rendered, err := adapter.Render(ag)

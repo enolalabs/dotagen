@@ -2,8 +2,10 @@ package engine
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/enolalabs/dotagen/v2/internal/config"
@@ -12,21 +14,114 @@ import (
 func CreateSymlink(src, dst string) error {
 	if info, err := os.Lstat(dst); err == nil {
 		if info.Mode()&os.ModeSymlink == 0 {
-			return fmt.Errorf("refusing to overwrite non-symlink file: %s", dst)
+			if runtime.GOOS == "windows" {
+				if err := os.RemoveAll(dst); err != nil {
+					return fmt.Errorf("failed to remove existing file: %w", err)
+				}
+			} else {
+				return fmt.Errorf("refusing to overwrite non-symlink file: %s", dst)
+			}
 		}
-		existing, err := os.Readlink(dst)
-		if err != nil {
-			return fmt.Errorf("failed to read existing symlink: %w", err)
+		if info.Mode()&os.ModeSymlink != 0 {
+			existing, err := os.Readlink(dst)
+			if err != nil {
+				return fmt.Errorf("failed to read existing symlink: %w", err)
+			}
+			if existing == src {
+				return nil
+			}
 		}
-		if existing == src {
-			return nil
-		}
-		if err := os.Remove(dst); err != nil {
+		if err := os.RemoveAll(dst); err != nil {
 			return fmt.Errorf("failed to remove existing symlink: %w", err)
 		}
 	}
 
-	return os.Symlink(src, dst)
+	err := os.Symlink(src, dst)
+	if err == nil {
+		return nil
+	}
+
+	if runtime.GOOS == "windows" {
+		srcInfo, statErr := os.Stat(src)
+		if statErr != nil {
+			return err
+		}
+		if srcInfo.IsDir() {
+			return copyDir(src, dst)
+		}
+		if linkErr := os.Link(src, dst); linkErr == nil {
+			return nil
+		}
+		return copyFile(src, dst)
+	}
+
+	return err
+}
+
+func copyFile(src, dst string) error {
+	srcF, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("failed to open source: %w", err)
+	}
+	defer srcF.Close()
+
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		return fmt.Errorf("failed to create destination directory: %w", err)
+	}
+
+	dstF, err := os.Create(dst)
+	if err != nil {
+		return fmt.Errorf("failed to create destination: %w", err)
+	}
+	defer dstF.Close()
+
+	if _, err := io.Copy(dstF, srcF); err != nil {
+		return fmt.Errorf("failed to copy: %w", err)
+	}
+
+	if err := dstF.Close(); err != nil {
+		return err
+	}
+
+	srcInfo, err := srcF.Stat()
+	if err == nil {
+		os.Chmod(dst, srcInfo.Mode())
+	}
+
+	return nil
+}
+
+func copyDir(src, dst string) error {
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return fmt.Errorf("failed to stat source dir: %w", err)
+	}
+
+	if err := os.MkdirAll(dst, srcInfo.Mode()); err != nil {
+		return fmt.Errorf("failed to create destination dir: %w", err)
+	}
+
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		return fmt.Errorf("failed to read source dir: %w", err)
+	}
+
+	for _, entry := range entries {
+		srcPath := filepath.Join(src, entry.Name())
+		dstPath := filepath.Join(dst, entry.Name())
+
+		if entry.IsDir() {
+			if err := copyDir(srcPath, dstPath); err != nil {
+				return err
+			}
+		} else {
+			if err := copyFile(srcPath, dstPath); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func RemoveSymlink(path string) error {
@@ -38,7 +133,10 @@ func RemoveSymlink(path string) error {
 		return err
 	}
 	if info.Mode()&os.ModeSymlink != 0 {
-		return os.Remove(path)
+		return os.RemoveAll(path)
+	}
+	if runtime.GOOS == "windows" {
+		return os.RemoveAll(path)
 	}
 	return fmt.Errorf("%s is not a symlink", path)
 }
@@ -65,7 +163,7 @@ type SymlinkInfo struct {
 func ListManagedSymlinks(projectDir string, managedPaths []string) ([]SymlinkInfo, error) {
 	var links []SymlinkInfo
 	for _, p := range managedPaths {
-		fullPath := filepath.Join(projectDir, p)
+		fullPath := config.ResolvePath(projectDir, p)
 		isLink, err := IsSymlink(fullPath)
 		if err != nil {
 			continue
@@ -109,19 +207,19 @@ func RemoveGeneratedContents(dotgenDir string) error {
 
 func FindDotagenSymlinks(projectDir string, dotgenDir string) ([]SymlinkInfo, error) {
 	platformDirs := map[string]string{
-		config.ClaudeCodeRootPath:    "claude-code",
-		config.CodexRootPath:         "codex",
-		config.GeminiCliRootPath:     "gemini-cli",
-		config.OpenCodeRootPath:      "opencode",
-		config.AntigravityRootPath:   "antigravity",
-		config.CursorRootPath:        "cursor",
-		config.CopilotRootPath:       "github-copilot",
-		config.WindsurfRootPath:      "windsurf",
+		config.ClaudeCodeRootPath:  "claude-code",
+		config.CodexRootPath:       "codex",
+		config.GeminiCliRootPath:   "gemini-cli",
+		config.OpenCodeRootPath:    "opencode",
+		config.AntigravityRootPath: "antigravity",
+		config.CursorRootPath:      "cursor",
+		config.CopilotRootPath:     "github-copilot",
+		config.WindsurfRootPath:    "windsurf",
 	}
 
 	var links []SymlinkInfo
 	for dir, platform := range platformDirs {
-		fullDir := filepath.Join(projectDir, dir)
+		fullDir := config.ResolvePath(projectDir, dir)
 		entries, err := os.ReadDir(fullDir)
 		if err != nil {
 			continue
@@ -136,23 +234,37 @@ func FindDotagenSymlinks(projectDir string, dotgenDir string) ([]SymlinkInfo, er
 			}
 			fullPath := filepath.Join(fullDir, entry.Name())
 			isLink, err := IsSymlink(fullPath)
-			if err != nil || !isLink {
-				continue
-			}
-			target, err := os.Readlink(fullPath)
 			if err != nil {
 				continue
 			}
-			resolvedTarget := target
-			if !filepath.IsAbs(resolvedTarget) {
-				resolvedTarget = filepath.Join(filepath.Dir(fullPath), resolvedTarget)
-			}
-			if !strings.HasPrefix(resolvedTarget, dotgenDir) {
+			if !isLink && runtime.GOOS != "windows" {
 				continue
 			}
+			var target string
 			broken := false
-			if _, err := os.Stat(resolvedTarget); err != nil {
-				broken = true
+			if isLink {
+				target, err = os.Readlink(fullPath)
+				if err != nil {
+					continue
+				}
+				resolvedTarget := target
+				if !filepath.IsAbs(resolvedTarget) {
+					resolvedTarget = filepath.Join(filepath.Dir(fullPath), resolvedTarget)
+				}
+				if _, err := os.Stat(resolvedTarget); err != nil {
+					broken = true
+				}
+			}
+			if !strings.HasPrefix(filepath.ToSlash(fullPath), filepath.ToSlash(dotgenDir)) {
+				if target != "" {
+					resolvedTarget := target
+					if !filepath.IsAbs(resolvedTarget) {
+						resolvedTarget = filepath.Join(filepath.Dir(fullPath), resolvedTarget)
+					}
+					if !strings.HasPrefix(resolvedTarget, dotgenDir) {
+						continue
+					}
+				}
 			}
 			links = append(links, SymlinkInfo{
 				Path:     fullPath,

@@ -52,7 +52,7 @@ func (a *OpenCodeAdapter) SymlinkPath(agentName string) string {
 }
 
 func (a *OpenCodeAdapter) EnsureDirectories(projectDir string) error {
-	return os.MkdirAll(filepath.Join(projectDir, config.OpenCodeRootPath), 0o755)
+	return os.MkdirAll(config.ResolvePath(projectDir, config.OpenCodeRootPath), 0o755)
 }
 
 // SkillAdapter implementation
@@ -77,5 +77,5 @@ func (a *OpenCodeAdapter) SkillSymlinkDir(skillName string) string {
 }
 
 func (a *OpenCodeAdapter) EnsureSkillDirectories(projectDir string) error {
-	return os.MkdirAll(filepath.Join(projectDir, config.OpenCodeSkillPath), 0o755)
+	return os.MkdirAll(config.ResolvePath(projectDir, config.OpenCodeSkillPath), 0o755)
 }

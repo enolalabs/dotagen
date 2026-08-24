@@ -165,7 +165,7 @@ func cleanEmptyPlatformDirs(homeDir string) {
 	}
 
 	for _, dir := range dirs {
-		fullPath := filepath.Join(homeDir, dir)
+		fullPath := config.ResolvePath(homeDir, dir)
 		entries, err := os.ReadDir(fullPath)
 		if err != nil {
 			continue

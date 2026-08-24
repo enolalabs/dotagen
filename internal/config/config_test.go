@@ -61,3 +61,9 @@ func TestResolveTargets(t *testing.T) {
 	assert.Nil(t, cfg.ResolveTargets("disabled"))
 	assert.Nil(t, cfg.ResolveTargets("nonexistent"))
 }
+
+func TestResolvePath(t *testing.T) {
+	base := t.TempDir()
+	assert.Equal(t, filepath.Join(base, ".claude", "agents"), ResolvePath(base, filepath.Join(".claude", "agents")))
+	assert.Equal(t, base, ResolvePath(filepath.Join(base, "other"), base))
+}

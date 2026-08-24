@@ -2,6 +2,7 @@ package skill
 
 import (
 	"fmt"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -92,7 +93,8 @@ func (sk Skill) ContentWithReferences(symlinkDir string) string {
 			sb.WriteString(ref.Content)
 		} else {
 			if symlinkDir != "" {
-				filePath := filepath.Join(symlinkDir, ref.Name)
+				// Markdown-facing path: always slash-separated, even on Windows.
+				filePath := path.Join(filepath.ToSlash(symlinkDir), ref.Name)
 				sb.WriteString(fmt.Sprintf("> **File path**: `%s`\n", filePath))
 				sb.WriteString("> This is an actual file on disk — use the path above when copying or executing.\n\n")
 			}
